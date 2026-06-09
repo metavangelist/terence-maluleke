@@ -1,0 +1,1002 @@
+/* ─────────────────────────────────────────────
+   Gallery — Rico layout, homepage paper theme
+   ───────────────────────────────────────────── */
+
+:root {
+  --gr-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --gr-glass: rgba(255, 255, 255, 0.72);
+  --gr-glass-active: rgba(255, 255, 255, 0.95);
+  --gr-border: rgba(26, 26, 26, 0.14);
+  --gr-border-active: rgba(26, 26, 26, 0.32);
+  --gr-text: var(--ink, #1a1a1a);
+  --gr-text-dim: rgba(26, 26, 26, 0.52);
+}
+
+#section-gallery,
+#section-maquettes {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  scroll-snap-align: start;
+  color: var(--gr-text);
+  contain: layout style paint;
+}
+
+#section-gallery {
+  background: #3a4248;
+  --gr-glass-blur: 14px;
+  --gr-glass-saturate: 1;
+  --gr-glass-bg: rgba(28, 28, 28, 0.72);
+  --gr-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+#section-maquettes {
+  background: var(--paper, #f0f2f5);
+  --gr-glass-blur: 14px;
+  --gr-glass-saturate: 1;
+  --gr-glass-bg: rgba(28, 28, 28, 0.72);
+  --gr-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-page,
+:is(#section-gallery, #section-maquettes) #galleryGrid,
+#section-maquettes .gallery-page,
+#section-maquettes #maquettesGrid {
+  z-index: 2;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-page,
+#section-maquettes .gallery-page,
+:is(#section-gallery, #section-maquettes) #galleryGrid,
+#section-maquettes #maquettesGrid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--gr-sans);
+  -webkit-font-smoothing: antialiased;
+  background: transparent;
+  --gr-step-ms: 240ms;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  padding:
+    max(64px, calc(env(safe-area-inset-top) + 56px))
+    clamp(12px, 3vw, 32px)
+    max(14px, env(safe-area-inset-bottom))
+    clamp(12px, 3vw, 32px);
+  box-sizing: border-box;
+}
+
+/* ── Thando-style grid + detail layout ── */
+
+:is(#section-gallery, #section-maquettes) .gallery-layout {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-layout[data-mode="grid"] .gallery-rico--detail {
+  display: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-layout[data-mode="detail"] .gallery-index {
+  display: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail {
+  overflow: visible;
+}
+
+/* ── Gallery grid index (before click) ── */
+
+:is(#section-gallery, #section-maquettes) .gallery-index {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__scroller {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  contain: strict;
+  content-visibility: auto;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__page {
+  height: 100%;
+  min-height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding:
+    max(64px, calc(env(safe-area-inset-top) + 56px))
+    clamp(12px, 3vw, 32px)
+    max(14px, env(safe-area-inset-bottom))
+    clamp(12px, 3vw, 32px);
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100vh;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--gi-cols, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--gi-rows, 2), minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 22px);
+  width: min(100%, 980px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  margin: 0 auto;
+  align-self: stretch;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__cell {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform: translateZ(0);
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: clamp(10px, 1.6vw, 16px);
+  border: 0;
+  border-radius: clamp(16px, 2.8vw, 24px);
+  background: rgba(28, 28, 28, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__cell:hover,
+:is(#section-gallery, #section-maquettes) .gallery-index__cell:focus-visible {
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+  outline: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: none;
+  border: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__head {
+  grid-row: 1;
+  text-align: center;
+  z-index: 3;
+  margin-bottom: clamp(6px, 1.2vh, 14px);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__head {
+  min-height: 5.5rem;
+}
+
+:is(#section-maquettes) .gallery-rico--detail .gallery-rico__counter {
+  color: var(--gr-text-dim);
+}
+
+:is(#section-maquettes) .gallery-rico--detail .gallery-rico__title {
+  color: var(--gr-text);
+}
+
+#section-gallery .gallery-rico--detail .gallery-rico__counter {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+#section-gallery .gallery-rico--detail .gallery-rico__title {
+  color: #ffffff;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__body {
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr) minmax(0, 1fr);
+  gap: clamp(12px, 2vw, 28px);
+  min-height: 0;
+  align-items: stretch;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
+  grid-row: unset;
+  min-height: 0;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
+  overflow: visible;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__stage-wrap {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  gap: clamp(6px, 1.2vw, 14px);
+  min-height: 0;
+  height: 100%;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__body {
+  align-items: stretch;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
+  align-self: stretch;
+  height: 100%;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
+  height: 100%;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport {
+  width: auto;
+  height: auto;
+  flex-shrink: 0;
+}
+
+/* JS sets explicit px width/height — never clamp against a stage that may still be settling. */
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport.is-sized {
+  max-width: none;
+  max-height: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__aside--left {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(10px, 1.5vh, 14px);
+  padding-left: clamp(4px, 1.5vw, 16px);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__aside--right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: clamp(4px, 1.5vw, 16px);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire {
+  margin: 0;
+  pointer-events: auto;
+  border: 0;
+  border-radius: 18px;
+  background: rgba(28, 28, 28, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  color: #ffffff;
+  transform: translateZ(0);
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire:hover {
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__details {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 2vh, 18px);
+  padding: clamp(0.75rem, 2vh, 1rem) clamp(0.85rem, 2vw, 1.15rem);
+  border: 0;
+  border-radius: 18px;
+  background: rgba(28, 28, 28, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+  transform: translateZ(0);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__detail dt {
+  margin: 0 0 4px;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(9px, 2.2vw, 11px);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__detail dd {
+  margin: 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(11px, 2.4vw, 13px);
+  font-weight: 500;
+  line-height: 1.45;
+  color: #ffffff;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa {
+  width: 100%;
+  max-width: min(100%, 280px);
+  border: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: rgba(28, 28, 28, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  transform: translateZ(0);
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa.is-open {
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-toggle {
+  appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: clamp(10px, 1.5vh, 12px) clamp(12px, 2vw, 14px);
+  border: 0;
+  background: none;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(10px, 2.3vw, 12px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  text-align: left;
+  text-decoration: none;
+  color: #ffffff;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-toggle:hover {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa.is-open .gallery-rico__coa-panel {
+  grid-template-rows: 1fr;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-panel-inner {
+  overflow: hidden;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-body {
+  padding: 0 clamp(12px, 2vw, 14px) clamp(10px, 1.5vh, 12px);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(10px, 2.2vw, 12px);
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-body p {
+  margin: 0 0 0.75em;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__coa-body p:last-child {
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(#section-gallery, #section-maquettes) .gallery-rico__coa-panel {
+    transition: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  :is(#section-gallery, #section-maquettes) .gallery-rico__detail dt {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-rico__detail dd {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+@media (min-width: 1024px) {
+  :is(#section-gallery, #section-maquettes) {
+    --gr-glass-blur: 20px;
+    --gr-glass-saturate: 1.12;
+  }
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__nav {
+  isolation: isolate;
+  transform: translateZ(0);
+  appearance: none;
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  width: clamp(36px, 4.5vw, 44px);
+  height: clamp(36px, 4.5vw, 44px);
+  cursor: pointer;
+  font-size: clamp(16px, 2.5vw, 20px);
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 28, 28, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--gr-glass-shadow);
+  transition: color 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__nav::before {
+  display: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__nav span {
+  position: relative;
+  z-index: 1;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__nav:hover:not(:disabled) {
+  color: #fff;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__nav:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+@media (min-width: 1024px) {
+  :is(#section-gallery, #section-maquettes) .gallery-rico__nav {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    border-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :is(#section-gallery, #section-maquettes) .gallery-rico__nav {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(28, 28, 30, 0.94);
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-index__cell {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(28, 28, 28, 0.94);
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-rico__details,
+  :is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire,
+  :is(#section-gallery, #section-maquettes) .gallery-rico__coa {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(28, 28, 28, 0.94);
+  }
+}
+
+@media (max-width: 768px) {
+  :is(#section-gallery, #section-maquettes) .gallery-rico__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 14px;
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-rico__stage-wrap {
+    grid-row: 1;
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-rico__aside--left {
+    grid-row: 2;
+    align-items: flex-start;
+    padding-left: 0;
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-rico__aside--right {
+    grid-row: 3;
+    padding-right: 0;
+  }
+
+  :is(#section-gallery, #section-maquettes) .gallery-rico__details {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__pills-wrap,
+:is(#section-gallery, #section-maquettes) .gallery-rico__pills {
+  --gr-pill-visible: 3;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__pills {
+  padding-block: 0;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__stage {
+  background-color: transparent;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__viewport,
+:is(#section-gallery, #section-maquettes) .gallery-rico__frame,
+:is(#section-gallery, #section-maquettes) .gallery-rico__img {
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__viewport:focus,
+:is(#section-gallery, #section-maquettes) .gallery-rico__viewport:focus-visible,
+:is(#section-gallery, #section-maquettes) img:focus,
+:is(#section-gallery, #section-maquettes) img:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-page,
+#section-maquettes .gallery-page {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+:is(#section-gallery, #section-maquettes) #galleryGrid,
+:is(#section-gallery, #section-maquettes) #maquettesGrid {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+/* ── Artwork stage ── */
+
+.gallery-rico__stage {
+  grid-row: 2;
+  position: relative;
+  z-index: 2;
+  inset: auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: pan-y pinch-zoom;
+}
+
+.gallery-rico__viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: min(100%, 640px);
+  margin: 0 auto;
+  cursor: default;
+  outline: none;
+}
+
+.gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"] {
+  cursor: crosshair;
+}
+
+.gallery-magnify__lens {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 10px 36px rgba(0, 0, 0, 0.42),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  z-index: 6;
+  background-repeat: no-repeat;
+  background-color: #1a1a1a;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+}
+
+.gallery-rico__viewport.is-magnifying .gallery-magnify__lens {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"] {
+    cursor: default;
+  }
+
+  .gallery-magnify__lens {
+    display: none !important;
+  }
+}
+
+.gallery-rico__frame {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate3d(0, 0, 0) scale(1);
+  will-change: transform, opacity;
+}
+
+.gallery-rico__frame.is-active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
+}
+
+.gallery-rico__frame.is-enter-from-right {
+  animation: gr-enter-right var(--gr-step-ms) linear forwards;
+  z-index: 2;
+}
+
+.gallery-rico__frame.is-enter-from-left {
+  animation: gr-enter-left var(--gr-step-ms) linear forwards;
+  z-index: 2;
+}
+
+.gallery-rico__frame.is-leave-to-left {
+  animation: gr-leave-left var(--gr-step-ms) linear forwards;
+  z-index: 1;
+}
+
+.gallery-rico__frame.is-leave-to-right {
+  animation: gr-leave-right var(--gr-step-ms) linear forwards;
+  z-index: 1;
+}
+
+@keyframes gr-enter-right {
+  from { opacity: 0.12; transform: translate3d(4.5%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes gr-enter-left {
+  from { opacity: 0.12; transform: translate3d(-4.5%, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes gr-leave-left {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(-4.5%, 0, 0); }
+}
+
+@keyframes gr-leave-right {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(4.5%, 0, 0); }
+}
+
+.gallery-rico__img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ── Dock: meta + calendar-style list ── */
+
+.gallery-rico__dock {
+  display: contents;
+}
+
+.gallery-rico__foot {
+  grid-row: 1;
+  justify-self: center;
+  position: relative;
+  width: min(94vw, 420px);
+  max-width: min(92vw, 420px);
+  margin: 0 auto 10px;
+  z-index: 3;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Calendar panel — matches #section-calendar .exhib-cal */
+
+.gallery-rico__cal {
+  grid-row: 3;
+  justify-self: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 0.55rem 0.65rem;
+  box-sizing: border-box;
+  width: min(94vw, 380px);
+  margin: 10px auto 0;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.gallery-rico__cal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(28, 28, 28, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gallery-rico__cal > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Scroll list — exactly 3 visible bars ── */
+
+.gallery-rico__pills-wrap {
+  --gr-pill-h: 30px;
+  --gr-pill-gap: 4px;
+  --gr-pill-visible: 2;
+
+  width: 100%;
+  height: calc(
+    var(--gr-pill-visible) * var(--gr-pill-h) +
+    (var(--gr-pill-visible) - 1) * var(--gr-pill-gap)
+  );
+  overflow: hidden;
+}
+
+.gallery-rico__pills {
+  --gr-pill-h: 30px;
+  --gr-pill-gap: 4px;
+  --gr-pill-visible: 2;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--gr-pill-gap);
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding-block: calc(var(--gr-pill-h) + var(--gr-pill-gap));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  touch-action: pan-y;
+}
+
+.gallery-rico__pills::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-rico__pill {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 100%;
+  min-height: var(--gr-pill-h);
+  margin: 0;
+  padding: 0 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(12px, 3.2vw, 14px);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.gallery-rico__pill:hover {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.gallery-rico__pill.is-active {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.98);
+  font-weight: 600;
+}
+
+.gallery-rico__pill-label {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.gallery-rico__pill.is-active .gallery-rico__pill-label::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin-top: 3px;
+  background: currentColor;
+  opacity: 0.95;
+}
+
+.gallery-rico__pill-dot {
+  display: none;
+}
+
+.gallery-rico__title {
+  margin: 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(1.15rem, 4.5vw, 1.5rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  line-height: 1.08;
+  color: var(--gr-text);
+}
+
+.gallery-rico__meta {
+  margin: 0.35em 0 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(10px, 2.6vw, 12px);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.45;
+  color: var(--gr-text-dim);
+}
+
+.gallery-rico__enquire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.75em auto 0;
+  padding: 0.6em 1.15em;
+  border: 1px solid var(--gr-border-active);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gr-text);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(9px, 2.2vw, 11px);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: auto;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gallery-rico__enquire:hover {
+  background: var(--gr-text);
+  border-color: var(--gr-text);
+  color: #ffffff;
+}
+
+.gallery-rico__counter {
+  margin: 0 0 0.35em;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: clamp(10px, 2.6vw, 11px);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gr-text-dim);
+}
+
+@media (min-width: 641px) {
+  .gallery-rico {
+    padding:
+      max(72px, calc(env(safe-area-inset-top) + 64px))
+      clamp(16px, 4vw, 48px)
+      max(14px, env(safe-area-inset-bottom))
+      clamp(16px, 4vw, 48px);
+  }
+
+  .gallery-rico__viewport {
+    max-width: min(100%, 720px);
+  }
+
+  .gallery-rico__foot {
+    width: min(92vw, 420px);
+    margin-bottom: 14px;
+  }
+
+  .gallery-rico__cal {
+    width: min(92vw, 380px);
+    margin-top: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-rico__frame.is-enter-from-right,
+  .gallery-rico__frame.is-enter-from-left,
+  .gallery-rico__frame.is-leave-to-left,
+  .gallery-rico__frame.is-leave-to-right {
+    animation: none;
+  }
+}

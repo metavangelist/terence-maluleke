@@ -1,0 +1,258 @@
+/* Continuous vertical scroll — all sections stacked in one scroller. */
+
+:root {
+  --paper: #f0f2f5;
+  --ink: #1a1a1a;
+}
+
+html {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  scroll-behavior: auto;
+}
+
+html,
+body.site-scroll {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  overscroll-behavior: none;
+}
+
+body.site-scroll.home-anon {
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.site-scroller {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  background: var(--paper);
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overflow-anchor: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26, 26, 26, 0.28) transparent;
+}
+
+.site-scroller::-webkit-scrollbar {
+  width: 4px;
+}
+
+.site-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.site-scroller::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 26, 0.28);
+  border-radius: 999px;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .site-scroller {
+    height: -webkit-fill-available;
+  }
+}
+
+.site-scroll__main {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100%;
+  background: var(--paper);
+  overflow: visible;
+}
+
+.site-section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--paper);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  touch-action: pan-y;
+}
+
+.site-section[hidden] {
+  display: none !important;
+}
+
+#section-home {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--paper);
+  box-sizing: border-box;
+}
+
+#section-study {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #3a4248;
+  box-sizing: border-box;
+}
+
+#section-maquettes {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: var(--paper);
+  box-sizing: border-box;
+}
+
+#section-calendar {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #1a1510;
+  box-sizing: border-box;
+}
+
+/* Gallery & maquettes are flex so their children can anchor to a real height */
+#section-gallery,
+#section-maquettes {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+#section-gallery {
+  background: #3a4248;
+}
+
+#section-maquettes {
+  background: var(--paper, #f0f2f5);
+}
+
+#section-home {
+  z-index: 2;
+  background: var(--paper);
+  overflow: visible;
+}
+
+#section-info {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #000;
+}
+
+#section-info .back {
+  display: none;
+}
+
+.info-gallery__track,
+.info-gallery__sticky {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--paper);
+  transform: none !important;
+}
+
+.info-gallery__sticky {
+  display: block;
+}
+
+.info-gallery__gallery,
+.info-gallery__info {
+  background: var(--paper);
+}
+
+.info-gallery__gallery .gallery-page {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
+/* Gallery must be able to scroll internally */
+#galleryGrid,
+.gallery-grid,
+.info-gallery__gallery-scroll {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Persistent bottom-right home menu cloned from #anonNav */
+.anon__list--persistent {
+  position: fixed;
+  right: 32px;
+  bottom: 48px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  pointer-events: auto;
+}
+
+.anon__list--persistent .anon__list-item {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Hide duplicate original menu after persistent menu exists */
+body:has(#persistentAnonNav) #anonNav {
+  visibility: hidden;
+}
+
+@media (max-width: 700px) {
+  .anon__list--persistent {
+    right: 24px;
+    bottom: max(52px, env(safe-area-inset-bottom) + 32px);
+  }
+}
+
+.site-scroller.is-scroll-animating {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  .site-scroller {
+    scroll-behavior: auto;
+  }
+}

@@ -3,87 +3,364 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#ffffff" />
-  <title>Terence Ntasko Maluleke</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="mobile.css" />
+  <meta name="theme-color" content="#f0f2f5" />
+  <title>Terence Ntsako Maluleke</title>
+  <link rel="preload" as="video" href="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" fetchpriority="high" />
+  <link rel="preload" as="video" href="videos/info/archives/archive-621e3fef.mp4" type="video/mp4" fetchpriority="high" />
+  <link rel="preload" as="video" href="videos/info/archives/archive-fathers-graduation-party.mp4" type="video/mp4" fetchpriority="high" />
+  <link rel="preload" as="video" href="videos/info/muse-5.mp4" type="video/mp4" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&family=Pinyon+Script&family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260753" />
+  <link rel="stylesheet" href="mobile.css?v=20260530" />
+  <link rel="stylesheet" href="site-nav.css?v=20260678" />
+  <link rel="stylesheet" href="pages/info.css?v=20260607" />
+  <link rel="stylesheet" href="pages/gallery.css?v=20260809d" />
+  <link rel="stylesheet" href="pages/info-gallery-transition.css?v=20260530m" />
+  <link rel="stylesheet" href="site-scroll.css?v=20260809s" />
+  <link rel="stylesheet" href="pages/shows.css?v=20260631" />
+  <link rel="stylesheet" href="pages/study.css?v=20260809l" />
+  <link rel="stylesheet" href="site-loader.css?v=20260678" />
 </head>
-<body class="home-poster">
-  <main class="poster-shell" aria-label="Terence Ntasko Maluleke">
-    <div class="type-poster">
-      <a class="type-item type-stack type-poster__c1 type-poster__r1" href="info.html" data-stack="3">
-        <span>Info</span><span>Info</span><span>Info</span>
-      </a>
-      <a class="type-item type-plain type-poster__c1 type-poster__r2" href="mailto:hello@terencemaluleke.art">Contact</a>
-      <a class="type-item type-glitch type-poster__c1 type-poster__r3" href="gallery.html">Gallery</a>
-      <a class="type-item type-stack type-poster__c1 type-poster__r4" href="shows.html" data-stack="3">
-        <span>Shows</span><span>Shows</span><span>Shows</span>
-      </a>
-      <a class="type-item type-glitch type-poster__c1 type-poster__r5" href="#process">Process</a>
-
-      <a class="type-item type-stack type-stack--dense type-poster__c2 type-poster__r1" href="spotify.html" data-stack="6">
-        <span>Spotify Playlist</span>
-        <span>Spotify Playlist</span>
-        <span>Spotify Playlist</span>
-        <span>Spotify Playlist</span>
-        <span>Spotify Playlist</span>
-        <span>Spotify Playlist</span>
-      </a>
-      <a class="type-item type-stack type-poster__c2 type-poster__r2" href="https://www.instagram.com/terencentsako/" target="_blank" rel="noopener noreferrer" data-stack="3">
-        <span>Instagram</span><span>Instagram</span><span>Instagram</span>
-      </a>
-      <p class="type-item type-plain type-now type-poster__c2 type-poster__r3" id="homeNow" aria-live="polite"></p>
-      <img
-        class="home-barcode type-poster__c2 type-poster__r5"
-        src="assets/example-barcode.png"
-        alt=""
-        width="960"
-        height="679"
-        decoding="async"
-      />
+<body class="site-scroll home-anon is-loading">
+  <div id="siteLoader" class="site-loader" aria-live="polite" aria-busy="true">
+    <p class="site-loader__label">Loading</p>
+    <div class="site-loader__track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="site-loader__bar" id="siteLoaderBar"></div>
     </div>
-  </main>
+  </div>
+  <nav class="site-nav" id="siteNav" aria-label="Site links">
+    <a class="site-nav__contact" href="mailto:terence.ntsako@gmail.com">contact</a>
+    <a class="site-nav__home" href="#home" data-scroll-section="home" hidden>home</a>
+    <a
+      class="site-nav__instagram"
+      href="https://www.instagram.com/terencentsako/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >instagram</a>
+  </nav>
+  <div id="siteScroller" class="site-scroller">
+  <div class="site-scroll__main">
 
-  <script>
-    function formatNow(date = new Date()) {
-      const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      const h = date.getHours();
-      const hh = h % 12 || 12;
-      const mm = String(date.getMinutes()).padStart(2, "0");
-      const ss = String(date.getSeconds()).padStart(2, "0");
-      const ampm = h < 12 ? "AM" : "PM";
-      return `${weekdays[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} · ${hh}:${mm}:${ss} ${ampm}`;
-    }
+    <!-- HOME -->
+    <section class="site-section" id="section-home" data-section="home" aria-label="Home">
+      <div class="blob blob--pending" id="blob">
+        <div class="blob__pulse">
+          <div class="blob__shape">
+            <div class="blob__painting" id="blobPainting">
+              <img
+                src="assets/images/DSC01668_2.jpg"
+                alt=""
+                width="2103"
+                height="1402"
+                decoding="async"
+                fetchpriority="high"
+                draggable="false"
+              />
+            </div>
+            <div class="blob__content" id="blobContent" aria-hidden="true">
+              <div class="blob__content-pos" id="blobContentPos">
+                <div class="blob__content-inner" id="blobContentInner">
+                <header class="anon__brand">
+                  <span class="anon__brand-strong">ARTIST</span>
+                </header>
+                <div class="anon__hero">
+                  <h1 class="anon__title">
+                    <span class="anon__title-word anon__title-word--terence">Terence</span>
+                    <span class="anon__title-word anon__title-word--ntsako">Ntsako</span>
+                    <span class="anon__title-word anon__title-word--maluleke">Maluleke</span>
+                  </h1>
+                  <p class="anon__tagline">Soweto · Johannesburg · South Africa</p>
+                </div>
+                <div class="anon__stage">
+                  <nav class="anon__list" aria-hidden="true">
+                    <a class="anon__list-item" href="#info"       data-scroll-section="info"><span class="anon__list-name">Info</span></a>
+                    <a class="anon__list-item" href="#gallery"    data-scroll-section="gallery"><span class="anon__list-name">Gallery</span></a>
+                    <a class="anon__list-item" href="#maquettes"  data-scroll-section="maquettes"><span class="anon__list-name">Assamblage</span></a>
+                    <a class="anon__list-item" href="#study"      data-scroll-section="study"><span class="anon__list-name">Study</span></a>
+                    <a class="anon__list-item" href="#calendar"   data-scroll-section="calendar"><span class="anon__list-name">Calendar</span></a>
+                  </nav>
+                </div>
+                <footer class="anon__foot">
+                  <p class="anon__clock" id="blobClock"></p>
+                </footer>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    const nowEl = document.getElementById("homeNow");
-    function tickNow() {
-      nowEl.textContent = formatNow();
-    }
-    tickNow();
-    setInterval(tickNow, 1000);
+      <main class="anon" aria-label="Terence Ntsako Maluleke">
+        <header class="anon__brand">
+          <span class="anon__brand-strong">ARTIST</span>
+        </header>
 
-    const SPOTIFY_EMBED_SRC =
-      "https://open.spotify.com/embed/playlist/1vuOTBPavAwTsYt5ROcrDL?utm_source=generator&theme=0";
-    const spotifyLink = document.querySelector('a[href="spotify.html"]');
-    let spotifyEmbedWarm = false;
+        <div class="anon__hero">
+          <h1 class="anon__title" aria-label="Terence Ntsako Maluleke">
+            <span class="anon__title-word anon__title-word--terence">Terence</span>
+            <span class="anon__title-word anon__title-word--ntsako">Ntsako</span>
+            <span class="anon__title-word anon__title-word--maluleke">Maluleke</span>
+          </h1>
+          <p class="anon__tagline">Soweto · Johannesburg · South Africa</p>
+        </div>
 
-    function warmSpotifyEmbed() {
-      if (spotifyEmbedWarm) return;
-      spotifyEmbedWarm = true;
-      const warm = document.createElement("iframe");
-      warm.src = SPOTIFY_EMBED_SRC;
-      warm.tabIndex = -1;
-      warm.setAttribute("aria-hidden", "true");
-      warm.style.cssText =
-        "position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;visibility:hidden";
-      document.body.appendChild(warm);
-    }
+        <div class="anon__stage">
+          <nav class="anon__list" id="anonNav" aria-label="Site">
+            <a class="anon__list-item" href="#info"       data-scroll-section="info"><span class="anon__list-name">Info</span></a>
+            <a class="anon__list-item" href="#gallery"    data-scroll-section="gallery"><span class="anon__list-name">Gallery</span></a>
+            <a class="anon__list-item" href="#maquettes"  data-scroll-section="maquettes"><span class="anon__list-name">Assamblage</span></a>
+            <a class="anon__list-item" href="#study"      data-scroll-section="study"><span class="anon__list-name">Study</span></a>
+            <a class="anon__list-item" href="#calendar"   data-scroll-section="calendar"><span class="anon__list-name">Calendar</span></a>
+          </nav>
+        </div>
 
-    if (spotifyLink) {
-      spotifyLink.addEventListener("mouseenter", warmSpotifyEmbed, { once: true });
-      spotifyLink.addEventListener("focus", warmSpotifyEmbed, { once: true });
-    }
-  </script>
+        <footer class="anon__foot">
+          <p class="anon__clock" id="homeNow" aria-live="polite"></p>
+        </footer>
+      </main>
+    </section>
+
+    <!-- INFO (standalone snap frame) -->
+    <section class="site-section" id="section-info" data-section="info" aria-label="Info">
+      <video
+        class="info-bg-video"
+        id="infoBgVideo"
+        muted
+        loop
+        playsinline
+        webkit-playsinline
+        disablepictureinpicture
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="videos/info/muse-5.mp4" type="video/mp4" />
+      </video>
+      <div class="info-stars info-stars--back" id="infoStarsBack" aria-hidden="true">
+        <figure class="info-star" data-star-index="2">
+          <div class="info-star__shape">
+            <video
+              class="info-star__video"
+              data-info-star-video
+              data-star-src="videos/info/archives/archive-fathers-graduation-party.mp4"
+              muted
+              loop
+              playsinline
+              webkit-playsinline
+              disablepictureinpicture
+              preload="auto"
+            ></video>
+          </div>
+        </figure>
+      </div>
+      <div class="info-stars" id="infoStars" aria-hidden="true">
+        <figure class="info-star" data-star-index="0">
+          <div class="info-star__shape">
+            <video
+              class="info-star__video"
+              data-info-star-video
+              data-star-src="videos/info/archives/archive-1a0cc41b.mp4"
+              muted
+              loop
+              playsinline
+              webkit-playsinline
+              disablepictureinpicture
+              preload="auto"
+            ></video>
+          </div>
+        </figure>
+        <figure class="info-star" data-star-index="1">
+          <div class="info-star__shape">
+            <video
+              class="info-star__video"
+              data-info-star-video
+              data-star-src="videos/info/archives/archive-621e3fef.mp4"
+              muted
+              loop
+              playsinline
+              webkit-playsinline
+              disablepictureinpicture
+              preload="auto"
+            ></video>
+          </div>
+        </figure>
+      </div>
+      <main class="poster" aria-label="Info page">
+        <div class="content">
+          <div class="bio-slot">
+            <div class="info-layout">
+              <div class="info-cube-wrap" id="infoCubeWrap">
+                <div class="info-cube-scene" id="infoCubeScene" aria-label="Rotatable video cube — drag to spin">
+                  <div class="info-cube" id="infoCube">
+                    <div class="info-cube__face info-cube__face--front">
+                      <video class="info-cube__video" muted loop playsinline webkit-playsinline disablepictureinpicture preload="none" data-info-video>
+                        <source src="videos/maquettes/04.m4v" type="video/mp4">
+                      </video>
+                    </div>
+                    <div class="info-cube__face info-cube__face--back">
+                      <video class="info-cube__video" muted loop playsinline webkit-playsinline disablepictureinpicture preload="none" data-info-video>
+                        <source src="videos/maquettes/05.m4v" type="video/mp4">
+                      </video>
+                    </div>
+                    <div class="info-cube__face info-cube__face--left">
+                      <video class="info-cube__video" muted loop playsinline webkit-playsinline disablepictureinpicture preload="none" data-info-video>
+                        <source src="videos/maquettes/01.m4v" type="video/mp4">
+                      </video>
+                    </div>
+                    <div class="info-cube__face info-cube__face--right">
+                      <video class="info-cube__video" muted loop playsinline webkit-playsinline disablepictureinpicture preload="none" data-info-video>
+                        <source src="videos/maquettes/06.m4v" type="video/mp4">
+                      </video>
+                    </div>
+                    <div class="info-cube__face info-cube__face--top">
+                      <video class="info-cube__video" muted loop playsinline webkit-playsinline disablepictureinpicture preload="none" data-info-video>
+                        <source src="videos/maquettes/03.m4v" type="video/mp4">
+                      </video>
+                    </div>
+                    <div class="info-cube__face info-cube__face--bottom">
+                      <video class="info-cube__video" muted loop playsinline webkit-playsinline disablepictureinpicture preload="none" data-info-video>
+                        <source src="videos/maquettes/07.m4v" type="video/mp4">
+                      </video>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="info-bio-wrap">
+                <p class="bio" id="infoBio"></p>
+                <p id="bioTextSource" hidden>
+                  Terence Ntsako Maluleke is a digital artist and painter. Born in Soweto, South Africa,
+                  Maluleke draws inspiration from the township community he grew up in. Working in a predominantly
+                  figurative mode, he creates stylized portraits and still lifes that explore the contemporary Black urban
+                  experience. Forgoing the specificity of individualistic portraiture, he embraces the multiplicity of
+                  pan-African Black identities in his art. A graduate of The Animation School in Johannesburg, Maluleke is
+                  an accomplished animator who has done visual development work for Walt Disney Animation Studios, Sony
+                  Pictures Animation, Netflix, and Triggerfish. In 2022, the artist co-founded Kasi Sketchbook, a nonprofit
+                  project that offers drawing clubs to children and young adults in Johannesburg's townships.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- GALLERY (standalone snap frame) -->
+    <section class="site-section" id="section-gallery" data-section="gallery" aria-label="Terence Ntsako Maluleke gallery">
+      <div class="cross-bg" aria-hidden="true">
+        <video
+          id="galleryCrossVideo"
+          class="cross-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          webkit-playsinline
+          disablepictureinpicture
+          preload="auto"
+        >
+          <source src="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" />
+          <source src="videos/info/archives/archive-1a0cc41b.mov" type="video/quicktime" />
+        </video>
+      </div>
+      <div class="cross-veil" aria-hidden="true"></div>
+      <main class="gallery-page" aria-label="Terence Ntsako Maluleke gallery">
+        <div class="gallery-grid" id="galleryGrid" role="list"></div>
+      </main>
+    </section>
+
+    <!-- MAQUETTES -->
+    <section class="site-section" id="section-maquettes" data-section="maquettes" aria-label="Assamblage">
+      <main class="gallery-page" aria-label="Assamblage">
+        <div class="gallery-grid" id="maquettesGrid" role="list"></div>
+      </main>
+    </section>
+
+    <!-- STUDY -->
+    <section class="site-section" id="section-study" data-section="study" aria-label="Study">
+      <main class="study" aria-label="Study page">
+        <div class="cross-bg" aria-hidden="true">
+          <video
+            id="studyVideo"
+            class="cross-video"
+            autoplay
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            disablepictureinpicture
+            preload="auto"
+          >
+            <source src="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" />
+            <source src="videos/info/archives/archive-1a0cc41b.mov" type="video/quicktime" />
+          </video>
+        </div>
+        <div class="cross-veil" aria-hidden="true"></div>
+        <div class="study-gallery" id="studyGallery">
+          <div class="study-gallery__layout" id="studyGrid">
+            <div class="study-gallery__zone study-gallery__zone--tl" data-zone="tl"></div>
+            <div class="study-gallery__zone study-gallery__zone--tr" data-zone="tr"></div>
+            <div class="study-gallery__zone study-gallery__zone--bl" data-zone="bl"></div>
+            <div class="study-gallery__zone study-gallery__zone--br" data-zone="br"></div>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="site-section" id="section-calendar" data-section="calendar" aria-label="Exhibitions">
+      <main class="exhib" aria-label="Exhibitions">
+        <div class="exhib-bg" aria-hidden="true">
+          <video
+            id="exhibVideo"
+            class="exhib-video"
+            poster="videos/exhibitions-bg-poster.jpg"
+            muted
+            loop
+            playsinline
+            webkit-playsinline
+            disablepictureinpicture
+            preload="auto"
+          >
+            <source src="videos/exhibitions-bg-web.mp4" type="video/mp4" />
+            <source src="videos/exhibitions-bg.mp4" type="video/mp4" />
+          </video>
+          <div class="exhib-bg__scrim"></div>
+        </div>
+        <div class="exhib-panel">
+          <div class="exhib-cal" aria-label="Exhibitions calendar">
+            <p class="exhib-cal__month" id="exhibMonthLabel" aria-live="polite"></p>
+            <div class="exhib-cal__weekdays" aria-hidden="true">
+              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div class="exhib-cal__weeks" id="exhibCalWeeks"></div>
+            <p class="exhib-cal__legend" aria-hidden="true">
+              <span class="exhib-cal__legend-item exhib-cal__legend-item--today">today</span>
+              <span class="exhib-cal__legend-item exhib-cal__legend-item--show">exhibition</span>
+            </p>
+          </div>
+          <div class="exhib-detail" id="exhibDetail" hidden>
+            <h2 class="exhib-detail__title" id="exhibDetailTitle"></h2>
+            <p class="exhib-detail__meta" id="exhibDetailMeta"></p>
+            <p class="exhib-detail__body" id="exhibDetailBody"></p>
+          </div>
+        </div>
+      </main>
+    </section>
+
+  </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="home-bubble.js?v=20260635"></script>
+  <script src="pages/home-init.js"></script>
+  <script src="pages/info-init.js?v=20260830"></script>
+  <script src="pages/gallery-init.js?v=20260809s"></script>
+  <script src="pages/info-gallery-transition.js?v=20260530m"></script>
+  <script src="pages/shows-init.js?v=20260612"></script>
+  <script src="pages/study-init.js?v=20260809k"></script>
+  <script src="pages/maquettes-init.js?v=20260809n"></script>
+  <script src="site-loader.js?v=20260827"></script>
+  <script src="site-scroll.js?v=20260809s"></script>
 </body>
 </html>

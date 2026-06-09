@@ -1,0 +1,24 @@
+.git
+.pydeps
+node_modules/
+scripts/
+.cursor/
+.restore/
+.vscode/
+assets/images/*
+!assets/images/DSC01668_2.jpg
+assets/maquettes/cfg.png
+assets/maquettes/fg.png
+assets/maquettes/hjjjj copy.png
+assets/Ali Fraizer.M4V
+assets/pinterest-gallery-ref.jpg
+assets/reference-gallery-layout.png
+assets/example-barcode.png
+videos/exhibitions-bg.mov
+videos/exhibitions-bg.mp4
+videos/gallery/
+videos/info/archives/*.mov
+videos/info/archives/*.m4v
+!videos/info/archives/archive-1a0cc41b.mp4
+!videos/info/archives/archive-621e3fef.mp4
+!videos/info/archives/archive-fathers-graduation-party.mp4

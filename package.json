@@ -1,0 +1,13 @@
+{
+  "name": "terence-maluleke",
+  "description": "Terence Maluleke — artist website",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "dev:local": "HOST=127.0.0.1 node scripts/dev-server.js"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "vercel": "^54.6.1"
+  }
+}

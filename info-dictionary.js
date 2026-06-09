@@ -4,11 +4,22 @@ window.WORD_DICTIONARY={
     "part": "numeral",
     "definition": "The calendar year two thousand twenty-two."
   },
-  "terence maluleke": {
-    "word": "Terence Maluleke",
+  "terence ntsako maluleke": {
+    "word": "Terence Ntsako Maluleke",
     "part": "proper noun",
-    "definition": "Hello, this is my name given to me by my parents.",
+    "definition": "Name of artist",
     "image": "IMG_0067.jpg"
+  },
+  "terence maluleke": {
+    "word": "Terence Ntsako Maluleke",
+    "part": "proper noun",
+    "definition": "Name of artist",
+    "image": "IMG_0067.jpg"
+  },
+  "ntsako": {
+    "word": "Ntsako",
+    "part": "proper noun",
+    "definition": "A given name; part of the artist's full name."
   },
   "terence": {
     "word": "Terence",

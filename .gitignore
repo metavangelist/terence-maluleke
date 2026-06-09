@@ -1,2 +1,23 @@
 .DS_Store
 .vercel
+node_modules/
+.pydeps/
+.cursor/
+.restore/
+.vscode/
+.site-version
+
+# Large local-only / deploy-excluded assets
+assets/Ali Fraizer.M4V
+assets/pinterest-gallery-ref.jpg
+assets/reference-gallery-layout.png
+assets/example-barcode.png
+assets/maquettes/cfg.png
+assets/maquettes/fg.png
+assets/maquettes/hjjjj copy.png
+videos/exhibitions-bg.mov
+videos/exhibitions-bg.mp4
+videos/gallery/
+videos/info/muse-6.mp4
+videos/info/archives/*.mov
+videos/info/archives/*.m4v
