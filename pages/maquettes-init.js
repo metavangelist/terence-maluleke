@@ -14,6 +14,7 @@
       year: "2025",
       medium: "Assamblage",
       dimensions: "—",
+      price: "ZAR 20000",
       sold: false,
     },
     {
@@ -22,7 +23,7 @@
       year: "2025",
       medium: "Assamblage",
       dimensions: "—",
-      sold: false,
+      sold: true,
     },
     {
       file: "hjjjj copy.png",
@@ -30,12 +31,12 @@
       year: "2025",
       medium: "Assamblage",
       dimensions: "—",
-      sold: false,
+      sold: true,
     },
   ];
 
   const ASSET_BASE = "assets/maquettes";
-  const CACHE = "?v=20260614e";
+  const CACHE = "?v=20260614g";
   const ENQUIRY_EMAIL = "terence.ntsako@gmail.com";
 
   let currentIndex = 0;
@@ -192,6 +193,10 @@
         <div class="gallery-rico__detail">
           <dt>Status</dt>
           <dd id="maqRicoStatus">—</dd>
+        </div>
+        <div class="gallery-rico__detail gallery-rico__detail--price" id="maqRicoPriceRow" hidden>
+          <dt>Price</dt>
+          <dd id="maqRicoPrice">—</dd>
         </div>
       </dl>
     `;
@@ -457,12 +462,21 @@
     setDetail("maqRicoDimensions", item.dimensions || "—");
     setDetail("maqRicoStatus", item.sold ? "Sold" : "Available");
 
+    const priceRow = document.getElementById("maqRicoPriceRow");
+    const showPrice = Boolean(item.price) && !item.sold;
+    if (priceRow) priceRow.hidden = !showPrice;
+    if (showPrice) setDetail("maqRicoPrice", item.price);
+
     const enquireEl = document.getElementById("maqRicoEnquire");
-    if (enquireEl) enquireEl.href = enquiryMailto(item);
+    if (enquireEl) {
+      enquireEl.hidden = Boolean(item.sold);
+      if (!item.sold) enquireEl.href = enquiryMailto(item);
+    }
 
     const contactEl = document.querySelector(".site-nav__contact");
     if (contactEl && document.body.dataset.currentSection === "maquettes") {
-      contactEl.href = enquiryMailto(item);
+      if (item.sold) contactEl.href = `mailto:${ENQUIRY_EMAIL}`;
+      else contactEl.href = enquiryMailto(item);
     }
 
     const prevBtn = document.getElementById("maqRicoPrev");
