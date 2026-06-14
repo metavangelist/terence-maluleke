@@ -1,7 +1,15 @@
 (function () {
   const CATALOG = [
     {
-      file: "cfg.jpg",
+      file: "Apples.png",
+      title: "Apples",
+      year: "2025",
+      medium: "Assamblage",
+      dimensions: "—",
+      sold: false,
+    },
+    {
+      file: "cfg.png",
       title: "cfg",
       year: "2025",
       medium: "Assamblage",
@@ -9,7 +17,7 @@
       sold: false,
     },
     {
-      file: "fg.jpg",
+      file: "fg.png",
       title: "fg",
       year: "2025",
       medium: "Assamblage",
@@ -17,7 +25,7 @@
       sold: false,
     },
     {
-      file: "hjjjj copy.jpg",
+      file: "hjjjj copy.png",
       title: "hjjjj copy",
       year: "2025",
       medium: "Assamblage",
@@ -27,7 +35,7 @@
   ];
 
   const ASSET_BASE = "assets/maquettes";
-  const CACHE = "?v=20260774";
+  const CACHE = "?v=20260614d";
   const ENQUIRY_EMAIL = "terence.ntsako@gmail.com";
 
   let currentIndex = 0;

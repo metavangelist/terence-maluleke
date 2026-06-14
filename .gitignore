@@ -1,6 +1,8 @@
 .DS_Store
 .vercel
 node_modules/
+studio/node_modules/
+studio/dist/
 .pydeps/
 .cursor/
 .restore/
@@ -12,6 +14,7 @@ assets/Ali Fraizer.M4V
 assets/pinterest-gallery-ref.jpg
 assets/reference-gallery-layout.png
 assets/example-barcode.png
+assets/maquettes/Apples.png
 assets/maquettes/cfg.png
 assets/maquettes/fg.png
 assets/maquettes/hjjjj copy.png

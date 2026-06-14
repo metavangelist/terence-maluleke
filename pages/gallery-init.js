@@ -12,7 +12,7 @@ const FILES = [
   "My buried jesus ii.jpg",
   "CARRY YOURS.jpg",
   "Swallowed.jpg",
-  "download - 2026-05-21T073335.434.png",
+  "download - 2026-05-21T073335.434.jpg",
   "T 9.jpg",
   "DSC07737.jpg",
   "T 11.jpg",
@@ -51,8 +51,38 @@ const PLACEHOLDER_YEARS = [
 const PREVIEW_BASE = "assets/gallery-preview";
 const VIEW_BASE = "assets/gallery-view";
 const ORIGINAL_BASE = "assets/images";
-const CACHE = "?v=20260531r";
+const CACHE = "?v=20260614c";
 const ENQUIRY_EMAIL = "terence.ntsako@gmail.com";
+const AFTER_FAIR_DIPTYCH_FILES = ["AFTER FAIR 002.jpg", "AFTER FAIR 001.jpg"];
+
+function afterFairDiptychPrimaryIndex() {
+  return catalog.findIndex((item) => item.file === AFTER_FAIR_DIPTYCH_FILES[0]);
+}
+
+function afterFairDiptychSecondaryIndex() {
+  return catalog.findIndex((item) => item.file === AFTER_FAIR_DIPTYCH_FILES[1]);
+}
+
+function isAfterFairDiptychItem(item) {
+  return AFTER_FAIR_DIPTYCH_FILES.includes(item?.file);
+}
+
+function nextGalleryCatalogIndex(from, delta) {
+  let next = from + delta;
+  const secondary = afterFairDiptychSecondaryIndex();
+  if (secondary >= 0) {
+    if (delta > 0 && next === secondary) next += 1;
+    if (delta < 0 && next === secondary) next -= 1;
+  }
+  return Math.max(0, Math.min(catalog.length - 1, next));
+}
+
+function resolveGalleryNavIndex(index) {
+  const secondary = afterFairDiptychSecondaryIndex();
+  const primary = afterFairDiptychPrimaryIndex();
+  if (secondary >= 0 && primary >= 0 && index === secondary) return primary;
+  return index;
+}
 
 function enquiryMailto(item, sectionLabel = "Gallery") {
   const subject = encodeURIComponent(`Enquiry: ${item.title}`);
@@ -213,6 +243,14 @@ function viewSrc(file) {
   return `${VIEW_BASE}/${encodeURIComponent(stemFromFile(file))}.jpg${CACHE}`;
 }
 
+function itemPreviewSrc(item) {
+  return item?.remotePreviewSrc || previewSrc(item.file);
+}
+
+function itemViewSrc(item) {
+  return item?.remoteViewSrc || viewSrc(item.file);
+}
+
 function originalSrc(file) {
   return `${ORIGINAL_BASE}/${encodeURIComponent(file)}${CACHE}`;
 }
@@ -255,6 +293,68 @@ function normalizeCatalogItem(item) {
   };
 }
 
+async function loadGallerySgData() {
+  try {
+    const res = await fetch("pages/gallery-sg-data.json");
+    if (res.ok) return await res.json();
+  } catch (_) {
+    /* offline / missing */
+  }
+  return { works: [], fileToTitle: {} };
+}
+
+function catalogFilesIndex(file, fallback = 0) {
+  const index = FILES.indexOf(file);
+  return index >= 0 ? index : fallback;
+}
+
+function sortCatalogItems(items) {
+  return items
+    .map((item) => ({
+      item,
+      filesIndex: catalogFilesIndex(item.file, item.filesIndex ?? 0),
+    }))
+    .sort((a, b) => {
+      const yearA = parseInt(a.item.year, 10) || 0;
+      const yearB = parseInt(b.item.year, 10) || 0;
+      if (yearB !== yearA) return yearB - yearA;
+      return a.filesIndex - b.filesIndex;
+    })
+    .map(({ item, filesIndex }) => ({ ...item, filesIndex }));
+}
+
+function mergeMissingGalleryPanels(catalog, sg) {
+  const byTitle = Object.fromEntries(sg.works.map((w) => [w.title, w]));
+  const presentFiles = new Set(catalog.map((c) => c.file));
+  const titlesInCatalog = new Set(catalog.map((c) => c.title));
+
+  for (const file of FILES) {
+    if (presentFiles.has(file)) continue;
+
+    const sgTitle = sg.fileToTitle?.[file];
+    if (!sgTitle || !titlesInCatalog.has(sgTitle)) continue;
+
+    const w = byTitle[sgTitle];
+    if (!w) continue;
+
+    catalog.push(
+      normalizeCatalogItem({
+        file,
+        title: w.title,
+        year: w.year,
+        medium: w.medium,
+        dimensions: w.dimensions,
+        price: w.price,
+        sold: Boolean(w.sold),
+        filesIndex: catalogFilesIndex(file),
+      })
+    );
+    presentFiles.add(file);
+  }
+
+  return sortCatalogItems(catalog);
+}
+
 function subtitleForItem(item, index) {
   const year = item.year || PLACEHOLDER_YEARS[item.filesIndex ?? index] || "";
   const parts = [];
@@ -264,9 +364,65 @@ function subtitleForItem(item, index) {
   return parts.join(" · ") || `${index + 1} of ${catalog.length}`;
 }
 
+function diptychPartnerItem(item) {
+  if (!isAfterFairDiptychItem(item)) return null;
+  const partnerFile =
+    item.file === AFTER_FAIR_DIPTYCH_FILES[0]
+      ? AFTER_FAIR_DIPTYCH_FILES[1]
+      : AFTER_FAIR_DIPTYCH_FILES[0];
+  return catalog.find((entry) => entry.file === partnerFile) || null;
+}
+
+function diptychStackMarkup(topItem, bottomItem, loading = "lazy") {
+  const topPreview = itemPreviewSrc(topItem);
+  const bottomPreview = itemPreviewSrc(bottomItem);
+  const topView = itemViewSrc(topItem);
+  const bottomView = itemViewSrc(bottomItem);
+
+  return `
+    <div class="gallery-rico__diptych">
+      <img
+        class="gallery-rico__img gallery-rico__img--diptych-top"
+        src="${topView}"
+        data-preview-src="${topPreview}"
+        data-view-src="${topView}"
+        alt="${escapeHtml(topItem.title)} (top panel)"
+        loading="${loading}"
+        decoding="async"
+        draggable="false"
+      />
+      <img
+        class="gallery-rico__img gallery-rico__img--diptych-bottom"
+        src="${bottomView}"
+        data-preview-src="${bottomPreview}"
+        data-view-src="${bottomView}"
+        alt="${escapeHtml(bottomItem.title)} (bottom panel)"
+        loading="${loading}"
+        decoding="async"
+        draggable="false"
+      />
+    </div>
+  `;
+}
+
 function frameHtml(item, index, isActive) {
-  const preview = previewSrc(item.file);
-  const view = viewSrc(item.file);
+  if (isAfterFairDiptychItem(item)) {
+    const topItem =
+      item.file === AFTER_FAIR_DIPTYCH_FILES[0] ? item : diptychPartnerItem(item) || item;
+    const bottomItem =
+      item.file === AFTER_FAIR_DIPTYCH_FILES[1] ? item : diptychPartnerItem(item);
+    if (bottomItem) {
+      const loading = index < 8 ? "eager" : "lazy";
+      return `
+        <figure class="gallery-rico__frame gallery-rico__frame--diptych${isActive ? " is-active" : ""}" data-art-index="${index}" aria-hidden="${isActive ? "false" : "true"}">
+          ${diptychStackMarkup(topItem, bottomItem, loading)}
+        </figure>
+      `;
+    }
+  }
+
+  const preview = itemPreviewSrc(item);
+  const view = itemViewSrc(item);
   const loading = index < 8 ? "eager" : "lazy";
 
   return `
@@ -385,22 +541,108 @@ function gridLayout() {
   return { cols: 3, rows: 2, perPage: 6 };
 }
 
-function indexPageCount() {
-  const { perPage } = gridLayout();
-  return Math.max(1, Math.ceil(catalog.length / perPage));
+function buildGridEntries() {
+  const [topFile, bottomFile] = AFTER_FAIR_DIPTYCH_FILES;
+  const topIdx = catalog.findIndex((item) => item.file === topFile);
+  const bottomIdx = catalog.findIndex((item) => item.file === bottomFile);
+  const hasDiptych = topIdx >= 0 && bottomIdx >= 0;
+  const entries = [];
+
+  for (let i = 0; i < catalog.length; i += 1) {
+    const item = catalog[i];
+    if (hasDiptych && item.file === bottomFile) continue;
+    if (hasDiptych && item.file === topFile) {
+      entries.push({
+        kind: "diptych",
+        catalogIndex: topIdx,
+        indices: [topIdx, bottomIdx],
+        item: catalog[topIdx],
+      });
+      continue;
+    }
+    entries.push({ kind: "single", catalogIndex: i, item });
+  }
+
+  return entries;
 }
 
-function buildIndexCellMarkup(item, index) {
-  const preview = previewSrc(item.file);
+function firstGridPageEntries(entries, mobile) {
+  const byTitle = (title) =>
+    entries.find((entry) => entry.kind === "single" && entry.item?.title === title);
+  const diptych = entries.find((entry) => entry.kind === "diptych");
+
+  if (mobile) {
+    return [byTitle("Towards Glory"), byTitle("Before Glory"), diptych].filter(Boolean);
+  }
+
+  return [
+    byTitle("Towards Glory"),
+    byTitle("Before Glory"),
+    diptych,
+    byTitle("Crimson Accord"),
+    byTitle("Anima"),
+  ].filter(Boolean);
+}
+
+function getGridPages() {
+  const { perPage } = gridLayout();
+  const mobile = perPage === 4;
+  const entries = buildGridEntries();
+  const page0 = firstGridPageEntries(entries, mobile);
+  const used = new Set(page0);
+  const rest = entries.filter((entry) => !used.has(entry));
+  const pages = [page0];
+
+  for (let offset = 0; offset < rest.length; offset += perPage) {
+    pages.push(rest.slice(offset, offset + perPage));
+  }
+
+  return pages.length ? pages : [[]];
+}
+
+function indexPageCount() {
+  return getGridPages().length;
+}
+
+function page0Placement(slotIndex, mobile) {
+  if (mobile) {
+    return [{ col: 1, row: 1 }, { col: 1, row: 2 }, null][slotIndex] ?? null;
+  }
+  return [
+    { col: 1, row: 1 },
+    { col: 2, row: 1 },
+    null,
+    { col: 1, row: 2 },
+    { col: 2, row: 2 },
+  ][slotIndex] ?? null;
+}
+
+function catalogPageForIndex(index) {
+  const pages = getGridPages();
+  for (let page = 0; page < pages.length; page += 1) {
+    for (const entry of pages[page]) {
+      if (entry.kind === "diptych" && entry.indices.includes(index)) return page;
+      if (entry.kind === "single" && entry.catalogIndex === index) return page;
+    }
+  }
+  return 0;
+}
+
+function buildIndexCellMarkup(item, index, placement = null) {
+  const preview = itemPreviewSrc(item);
+  const view = itemViewSrc(item);
   const loading = index < 6 ? "eager" : "lazy";
+  const placementStyle = placement
+    ? ` style="grid-column: ${placement.col}; grid-row: ${placement.row};"`
+    : "";
 
   return `
-    <button type="button" class="gallery-index__cell" data-art-index="${index}" aria-label="View ${escapeHtml(item.title)}">
+    <button type="button" class="gallery-index__cell" data-art-index="${index}" aria-label="View ${escapeHtml(item.title)}"${placementStyle}>
       <img
         class="gallery-index__img"
         src="${preview}"
         data-preview-src="${preview}"
-        data-view-src="${viewSrc(item.file)}"
+        data-view-src="${view}"
         alt="${escapeHtml(item.title)}"
         loading="${loading}"
         decoding="async"
@@ -410,24 +652,74 @@ function buildIndexCellMarkup(item, index) {
   `;
 }
 
+function buildDiptychCellMarkup(entry, mobile) {
+  const [topIdx, bottomIdx] = entry.indices;
+  const topItem = catalog[topIdx];
+  const bottomItem = catalog[bottomIdx];
+  const topPreview = itemPreviewSrc(topItem);
+  const bottomPreview = itemPreviewSrc(bottomItem);
+  const topView = itemViewSrc(topItem);
+  const bottomView = itemViewSrc(bottomItem);
+  const diptychCol = mobile ? 2 : 3;
+
+  return `
+    <button
+      type="button"
+      class="gallery-index__cell gallery-index__cell--diptych"
+      data-art-index="${topIdx}"
+      data-diptych="true"
+      style="--diptych-col: ${diptychCol}; grid-column: var(--diptych-col); grid-row: 1 / span 2;"
+      aria-label="View ${escapeHtml(topItem.title)}"
+    >
+      <div class="gallery-index__diptych">
+        <img
+          class="gallery-index__img gallery-index__img--diptych-top"
+          src="${topPreview}"
+          data-preview-src="${topPreview}"
+          data-view-src="${topView}"
+          alt="${escapeHtml(topItem.title)} (top panel)"
+          loading="eager"
+          decoding="async"
+          draggable="false"
+        />
+        <img
+          class="gallery-index__img gallery-index__img--diptych-bottom"
+          src="${bottomPreview}"
+          data-preview-src="${bottomPreview}"
+          data-view-src="${bottomView}"
+          alt="${escapeHtml(bottomItem.title)} (bottom panel)"
+          loading="eager"
+          decoding="async"
+          draggable="false"
+        />
+      </div>
+    </button>
+  `;
+}
+
+function buildGridCellMarkup(entry, slotIndex, page) {
+  const mobile = gridLayout().perPage === 4;
+  if (entry.kind === "diptych") return buildDiptychCellMarkup(entry, mobile);
+  const placement = page === 0 ? page0Placement(slotIndex, mobile) : null;
+  return buildIndexCellMarkup(entry.item, entry.catalogIndex, placement);
+}
+
 function buildIndexMarkup() {
-  const { cols, rows, perPage } = gridLayout();
-  const pages = indexPageCount();
-  let pagesHtml = "";
+  const { cols, rows } = gridLayout();
+  const pages = getGridPages();
+  const pagesHtml = pages
+    .map((entries, page) => {
+      const cells = entries
+        .map((entry, slotIndex) => buildGridCellMarkup(entry, slotIndex, page))
+        .join("");
 
-  for (let page = 0; page < pages; page += 1) {
-    const start = page * perPage;
-    const cells = catalog
-      .slice(start, start + perPage)
-      .map((item, offset) => buildIndexCellMarkup(item, start + offset))
-      .join("");
-
-    pagesHtml += `
+      return `
       <div class="gallery-index__page" data-page="${page}" style="--gi-cols: ${cols}; --gi-rows: ${rows}">
         <div class="gallery-index__grid" role="list">${cells}</div>
       </div>
     `;
-  }
+    })
+    .join("");
 
   return `
     <div class="gallery-index" id="galleryIndex">
@@ -509,14 +801,14 @@ function scrollGridToIndex(index) {
   const scroller = document.getElementById("galleryIndexScroller");
   if (!scroller) return;
 
-  const { perPage } = gridLayout();
-  const page = Math.floor(index / perPage);
+  const page = catalogPageForIndex(resolveGalleryNavIndex(index));
   const pageEl = scroller.querySelector(`.gallery-index__page[data-page="${page}"]`);
   if (pageEl) pageEl.scrollIntoView({ block: "start" });
 }
 
 function showGalleryGrid(options = {}) {
   collapseGalleryCoa();
+  document.getElementById("galleryRicoViewport")?._galleryHideMagnifier?.();
   galleryViewMode = "grid";
   galleryNavQueue = 0;
   galleryPageAnimating = false;
@@ -538,6 +830,7 @@ function showGalleryGrid(options = {}) {
 }
 
 function openGalleryDetail(index) {
+  index = resolveGalleryNavIndex(index);
   if (index < 0 || index >= catalog.length) return;
 
   galleryViewMode = "detail";
@@ -557,6 +850,7 @@ function setGalleryDetail(id, value) {
 }
 
 function updateGalleryDisplay(index, options = {}) {
+  document.getElementById("galleryRicoViewport")?._galleryHideMagnifier?.();
   const item = catalog[index];
   if (!item) return;
 
@@ -646,7 +940,7 @@ function initGalleryPageNav() {
   }
 
   function clampIndex(index) {
-    return Math.max(0, Math.min(catalog.length - 1, index));
+    return resolveGalleryNavIndex(Math.max(0, Math.min(catalog.length - 1, index)));
   }
 
   function clearFrameAnimClasses(frame) {
@@ -735,7 +1029,7 @@ function initGalleryPageNav() {
         return;
       }
       galleryNavQueue -= 1;
-      performStep(currentGalleryIndex + 1);
+      performStep(nextGalleryCatalogIndex(currentGalleryIndex, 1));
       return;
     }
 
@@ -746,7 +1040,7 @@ function initGalleryPageNav() {
     }
 
     galleryNavQueue += 1;
-    performStep(currentGalleryIndex - 1);
+    performStep(nextGalleryCatalogIndex(currentGalleryIndex, -1));
   }
 
   function enqueueStep(delta) {
@@ -1107,8 +1401,23 @@ function initDetailMagnifier(viewport, options = {}) {
     lensBgSrc = "";
   }
 
-  function activeImg() {
-    return viewport.querySelector(".gallery-rico__frame.is-active img");
+  function activeImgAtPoint(clientX, clientY) {
+    const frame = viewport.querySelector(".gallery-rico__frame.is-active");
+    if (!frame) return null;
+
+    for (const img of frame.querySelectorAll("img")) {
+      const rect = img.getBoundingClientRect();
+      if (
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom
+      ) {
+        return img;
+      }
+    }
+
+    return null;
   }
 
   function onMove(event) {
@@ -1117,7 +1426,7 @@ function initDetailMagnifier(viewport, options = {}) {
       return;
     }
 
-    const img = activeImg();
+    const img = activeImgAtPoint(event.clientX, event.clientY);
     if (!img) {
       hideLens();
       return;
@@ -1125,16 +1434,6 @@ function initDetailMagnifier(viewport, options = {}) {
 
     const imgRect = img.getBoundingClientRect();
     const vpRect = viewport.getBoundingClientRect();
-
-    if (
-      event.clientX < imgRect.left ||
-      event.clientX > imgRect.right ||
-      event.clientY < imgRect.top ||
-      event.clientY > imgRect.bottom
-    ) {
-      hideLens();
-      return;
-    }
 
     const src = getHighResSrc(img);
     const x = event.clientX - imgRect.left;
@@ -1157,8 +1456,19 @@ function initDetailMagnifier(viewport, options = {}) {
     viewport.classList.add("is-magnifying");
   }
 
-  viewport.addEventListener("mousemove", onMove, { passive: true });
   viewport.addEventListener("mouseleave", hideLens, { passive: true });
+  document.addEventListener(
+    "pointermove",
+    (event) => {
+      if (!isActive()) {
+        hideLens();
+        return;
+      }
+      onMove(event);
+    },
+    { passive: true }
+  );
+  viewport._galleryHideMagnifier = hideLens;
 }
 
 window.initDetailMagnifier = initDetailMagnifier;
@@ -1436,17 +1746,46 @@ async function waitForGalleryDetailReady(token) {
   return document.getElementById("galleryLayout")?.dataset.mode === "detail";
 }
 
+async function fitActiveDiptychViewport(viewport, token) {
+  const frame = viewport.querySelector(".gallery-rico__frame.is-active.gallery-rico__frame--diptych");
+  if (!frame) return false;
+
+  const imgs = [...frame.querySelectorAll(".gallery-rico__img")];
+  if (imgs.length !== 2) return false;
+
+  await Promise.all(
+    imgs.map((img) => waitForGalleryImageReady(img, img.dataset.viewSrc || img.src))
+  );
+  if (token !== galleryFitToken || galleryViewMode !== "detail") return true;
+
+  const [topImg, bottomImg] = imgs;
+  if (!topImg.naturalWidth || !topImg.naturalHeight || !bottomImg.naturalWidth || !bottomImg.naturalHeight) {
+    return true;
+  }
+
+  const nw = Math.max(topImg.naturalWidth, bottomImg.naturalWidth);
+  const nh = topImg.naturalHeight + bottomImg.naturalHeight;
+  applyGalleryViewportFit(viewport, nw, nh);
+  return true;
+}
+
 async function ensureGalleryViewportFit(token, expectedSrc) {
   if (token !== galleryFitToken || galleryViewMode !== "detail") return;
 
   const viewport = document.getElementById("galleryRicoViewport");
   if (!viewport) return;
 
-  const img = viewport.querySelector(".gallery-rico__frame.is-active img");
-  if (!img) return;
+  const frame = viewport.querySelector(".gallery-rico__frame.is-active");
+  const img = frame?.querySelector(".gallery-rico__img");
+  if (!frame || !img) return;
 
   if (!(await waitForGalleryDetailReady(token))) return;
   if (token !== galleryFitToken || galleryViewMode !== "detail") return;
+
+  if (frame.classList.contains("gallery-rico__frame--diptych")) {
+    await fitActiveDiptychViewport(viewport, token);
+    return;
+  }
 
   const srcToWaitFor = expectedSrc || img.dataset.viewSrc || img.src;
   galleryFitRetries = 0;
@@ -1550,14 +1889,34 @@ async function buildGallery() {
 }
 
 async function loadCatalog() {
-  let sg = { works: [], fileToTitle: {} };
-
-  try {
-    const res = await fetch("pages/gallery-sg-data.json");
-    if (res.ok) sg = await res.json();
-  } catch (_) {
-    /* offline / missing */
+  if (window.sanityClient?.fetchGallery) {
+    try {
+      const works = await window.sanityClient.fetchGallery();
+      if (Array.isArray(works) && works.length > 0) {
+        catalog = works.map((work, index) =>
+          normalizeCatalogItem({
+            file: work.legacyFilename || `${work.title}.jpg`,
+            title: work.title,
+            year: work.year || "",
+            medium: work.medium || "",
+            dimensions: work.dimensions || "",
+            price: work.price || "",
+            sold: Boolean(work.sold),
+            filesIndex: catalogFilesIndex(work.legacyFilename, index),
+            remoteViewSrc: work.imageUrl || null,
+            remotePreviewSrc: work.imageUrl || null,
+          })
+        );
+        const sg = await loadGallerySgData();
+        catalog = mergeMissingGalleryPanels(catalog, sg);
+        return;
+      }
+    } catch (_) {
+      /* fall back to static JSON */
+    }
   }
+
+  const sg = await loadGallerySgData();
 
   const byTitle = Object.fromEntries(sg.works.map((w) => [w.title, w]));
 
@@ -1587,15 +1946,7 @@ async function loadCatalog() {
     });
   });
 
-  catalog = catalog
-    .map((item) => ({ item, filesIndex: item.filesIndex }))
-    .sort((a, b) => {
-      const yearA = parseInt(a.item.year, 10) || 0;
-      const yearB = parseInt(b.item.year, 10) || 0;
-      if (yearB !== yearA) return yearB - yearA;
-      return a.filesIndex - b.filesIndex;
-    })
-    .map(({ item }) => item);
+  catalog = sortCatalogItems(catalog);
 }
 
 function prefetchView(index) {

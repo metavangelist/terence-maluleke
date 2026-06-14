@@ -198,6 +198,62 @@
   pointer-events: none;
 }
 
+:is(#section-gallery, #section-maquettes) .gallery-index__cell--diptych {
+  grid-column: var(--diptych-col, 3);
+  grid-row: 1 / span 2;
+  padding: clamp(8px, 1.2vw, 12px);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__diptych {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1vw, 10px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-index__cell--diptych .gallery-index__img {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: calc(50% - 0.35rem);
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__diptych {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 1.2vh, 14px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img--diptych-top,
+:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img--diptych-bottom {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: calc(50% - 0.35rem);
+}
+
 :is(#section-gallery, #section-maquettes) .gallery-rico__head {
   grid-row: 1;
   text-align: center;
@@ -644,6 +700,10 @@
 }
 
 .gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"] {
+  cursor: default;
+}
+
+.gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"].is-magnifying {
   cursor: crosshair;
 }
 

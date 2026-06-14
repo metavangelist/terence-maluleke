@@ -1,7 +1,7 @@
 (function () {
   const SHOW_DAYS = [8, 16, 24];
 
-  const SHOWS = {
+  const STATIC_SHOWS = {
     "hidden-parts": {
       day: 8,
       name: "Hidden Parts",
@@ -25,6 +25,8 @@
     },
   };
 
+  let SHOWS = { ...STATIC_SHOWS };
+
   const MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
@@ -46,6 +48,45 @@
   let calMonth = 0;
   let todayDay = 0;
 
+  function parseEventDate(value) {
+    if (!value) return null;
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) return null;
+    return { year, month, day };
+  }
+
+  function showsFromSanityRows(rows) {
+    const mapped = {};
+    rows.forEach((row) => {
+      const slug = row.slug || row.name?.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      if (!slug) return;
+
+      const parsed = parseEventDate(row.eventDate);
+      mapped[slug] = {
+        day: parsed?.day ?? row.day,
+        month: parsed?.month ?? row.month,
+        year: parsed?.year ?? row.year,
+        name: row.name,
+        venue: row.venue || "",
+        detail: row.detail || "",
+      };
+    });
+    return mapped;
+  }
+
+  async function loadShows() {
+    if (!window.sanityClient?.fetchExhibitions) return;
+
+    try {
+      const rows = await window.sanityClient.fetchExhibitions();
+      if (Array.isArray(rows) && rows.length) {
+        SHOWS = showsFromSanityRows(rows);
+      }
+    } catch (_) {
+      SHOWS = { ...STATIC_SHOWS };
+    }
+  }
+
   function getCalendarAnchor() {
     const now = new Date();
     return {
@@ -62,6 +103,7 @@
 
     ids.forEach((id, index) => {
       const show = SHOWS[id];
+      if (show.month && show.year) return;
       show.year = anchor.year;
       show.month = anchor.month;
       show.day = Math.min(SHOW_DAYS[index] ?? show.day, daysInMonth);
@@ -349,11 +391,16 @@
   document.addEventListener("site:ready", warmExhibitionsVideo, { once: true });
   document.addEventListener("gallery:ready", warmExhibitionsVideo, { once: true });
 
-  buildCalendar();
-  initVideo();
+  async function initCalendar() {
+    await loadShows();
+    buildCalendar();
+    initVideo();
 
-  const slug = window.location.hash.replace(/^#/, "").toLowerCase();
-  if (slug === "calendar" || slug === "shows" || slug === "exhibitions") {
-    window.setTimeout(() => setShowsVisible(true), 120);
+    const slug = window.location.hash.replace(/^#/, "").toLowerCase();
+    if (slug === "calendar" || slug === "shows" || slug === "exhibitions") {
+      window.setTimeout(() => setShowsVisible(true), 120);
+    }
   }
+
+  initCalendar();
 })();
