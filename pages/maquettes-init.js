@@ -35,7 +35,7 @@
   ];
 
   const ASSET_BASE = "assets/maquettes";
-  const CACHE = "?v=20260614d";
+  const CACHE = "?v=20260614e";
   const ENQUIRY_EMAIL = "terence.ntsako@gmail.com";
 
   let currentIndex = 0;
@@ -90,6 +90,22 @@
 
   function assetSrc(file) {
     return `${ASSET_BASE}/${encodeURI(file)}${CACHE}`;
+  }
+
+  function assetFallbackSrc(file) {
+    if (!/\.png$/i.test(file)) return null;
+    return assetSrc(file.replace(/\.png$/i, ".jpg"));
+  }
+
+  function wireMaquetteImage(img) {
+    img.addEventListener(
+      "error",
+      () => {
+        const fallback = assetFallbackSrc(img.dataset.assetFile || "");
+        if (fallback && img.src !== fallback) img.src = fallback;
+      },
+      { once: true }
+    );
   }
 
   function enquiryMailto(item) {
@@ -148,6 +164,7 @@
         <img
           class="gallery-rico__img"
           src="${src}"
+          data-asset-file="${escapeHtml(item.file)}"
           alt="${escapeHtml(item.title)}"
           loading="${index === 0 ? "eager" : "lazy"}"
           decoding="async"
@@ -250,6 +267,7 @@
         <img
           class="gallery-index__img"
           src="${src}"
+          data-asset-file="${escapeHtml(item.file)}"
           alt="${escapeHtml(item.title)}"
           loading="${index < 6 ? "eager" : "lazy"}"
           decoding="async"
@@ -594,7 +612,8 @@
       });
     }
 
-    document.querySelectorAll("#maquettesGrid .gallery-rico__img").forEach((img) => {
+    document.querySelectorAll("#maquettesGrid .gallery-rico__img, #maquettesGrid .gallery-index__img").forEach((img) => {
+      wireMaquetteImage(img);
       img.addEventListener("load", () => {
         if (viewMode !== "detail") return;
         const frame = img.closest(".gallery-rico__frame");
