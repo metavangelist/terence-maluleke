@@ -10,10 +10,15 @@
       title: "Info",
       topSection: "section-info",
     },
-    gallery: {
-      slug: "gallery",
-      title: "Gallery",
+    paintings: {
+      slug: "paintings",
+      title: "Paintings",
       topSection: "section-gallery",
+    },
+    prints: {
+      slug: "prints",
+      title: "Prints",
+      topSection: "section-prints",
     },
     maquettes: {
       slug: "maquettes",
@@ -37,7 +42,9 @@
     home: "home",
     index: "home",
     info: "info",
-    gallery: "gallery",
+    gallery: "paintings",
+    paintings: "paintings",
+    prints: "prints",
     maquettes: "maquettes",
     study: "study",
     spotify: "study",
@@ -50,6 +57,7 @@
     "section-home",
     "section-info",
     "section-gallery",
+    "section-prints",
     "section-maquettes",
     "section-study",
     "section-calendar",
@@ -182,7 +190,14 @@
     const pastHome = route.slug !== "home";
 
     if (nav) {
-      nav.classList.toggle("site-nav--inverse", route.slug === "calendar" || route.slug === "info" || route.slug === "study" || route.slug === "gallery");
+      nav.classList.toggle(
+        "site-nav--inverse",
+        route.slug === "calendar" ||
+          route.slug === "info" ||
+          route.slug === "study" ||
+          route.slug === "paintings" ||
+          route.slug === "prints"
+      );
       nav.classList.toggle("site-nav--with-home", pastHome);
 
       const homeEl = nav.querySelector(".site-nav__home");
@@ -213,8 +228,18 @@
       requestAnimationFrame(() => window.refreshMaquettesLayout());
     }
 
-    if (route.slug === "gallery" && typeof window.galleryRefreshScrollFx === "function") {
-      requestAnimationFrame(() => window.galleryRefreshScrollFx());
+    if (route.slug === "paintings" && typeof window.galleryRefreshScrollFx === "function") {
+      requestAnimationFrame(() => {
+        window.galleryRefreshScrollFx();
+        window.ensureGalleryIndexScrollReady?.();
+      });
+    }
+
+    if (route.slug === "prints" && typeof window.printsRefreshScrollFx === "function") {
+      requestAnimationFrame(() => {
+        window.printsRefreshScrollFx();
+        window.ensurePrintsIndexScrollReady?.();
+      });
     }
   }
 
@@ -237,8 +262,12 @@
   }
 
   function resetInternalScroll(route) {
-    if (route.slug === "gallery") {
+    if (route.slug === "paintings") {
       window.galleryShowGrid?.({ resetScroll: true });
+    }
+
+    if (route.slug === "prints") {
+      window.printsShowGrid?.({ resetScroll: true });
     }
 
     if (route.slug === "maquettes") {
@@ -254,7 +283,7 @@
   function onSectionActivated(route, previousSlug) {
     if (previousSlug === route.slug) return;
 
-    if (route.slug !== "gallery" && route.slug !== "maquettes") {
+    if (route.slug !== "paintings" && route.slug !== "prints" && route.slug !== "maquettes") {
       window.resetEnquiryContact?.();
     }
 
@@ -270,10 +299,27 @@
       window.pauseStudyVideo();
     }
 
-    if (route.slug === "gallery" && typeof window.playGalleryCrossVideo === "function") {
+    if (route.slug === "paintings" && typeof window.playGalleryCrossVideo === "function") {
       window.playGalleryCrossVideo();
-    } else if (typeof window.pauseGalleryCrossVideo === "function") {
-      window.pauseGalleryCrossVideo();
+    } else if (route.slug === "prints" && typeof window.playPrintsCrossVideo === "function") {
+      window.playPrintsCrossVideo();
+    } else {
+      if (typeof window.pauseGalleryCrossVideo === "function") window.pauseGalleryCrossVideo();
+      if (typeof window.pausePrintsCrossVideo === "function") window.pausePrintsCrossVideo();
+    }
+
+    if (route.slug === "paintings") {
+      window.markGallerySectionEntered?.();
+    }
+
+    if (route.slug === "prints") {
+      window.markPrintsSectionEntered?.();
+      window.printsRefreshScrollFx?.();
+    }
+
+    if (route.slug === "maquettes") {
+      window.markMaquettesSectionEntered?.();
+      window.maquettesRefreshScrollFx?.();
     }
   }
 
@@ -361,8 +407,25 @@
         event.preventDefault();
         if (typeof window.maquettesViewer?.isOpen === "function" && window.maquettesViewer.isOpen()) {
           window.maquettesViewer.close();
+        } else if (
+          document.getElementById("galleryLayout")?.dataset.mode === "detail" &&
+          window.galleryIsImmersive?.()
+        ) {
+          window.gallerySetImmersive?.(false);
         } else if (document.getElementById("galleryLayout")?.dataset.mode === "detail") {
           window.galleryShowGrid?.();
+        } else if (
+          document.getElementById("printsLayout")?.dataset.mode === "detail" &&
+          window.printsIsImmersive?.()
+        ) {
+          window.printsSetImmersive?.(false);
+        } else if (document.getElementById("printsLayout")?.dataset.mode === "detail") {
+          window.printsShowGrid?.();
+        } else if (
+          document.getElementById("maquettesLayout")?.dataset.mode === "detail" &&
+          window.maquettesIsImmersive?.()
+        ) {
+          window.maquettesSetImmersive?.(false);
         } else if (document.getElementById("maquettesLayout")?.dataset.mode === "detail") {
           window.maquettesShowGrid?.();
         }
@@ -500,7 +563,8 @@
     SECTIONS: [
       { id: "section-home", slug: "home", title: "Terence Ntsako Maluleke" },
       { id: "section-info", slug: "info", title: "Info" },
-      { id: "section-gallery", slug: "gallery", title: "Gallery" },
+      { id: "section-gallery", slug: "paintings", title: "Paintings" },
+      { id: "section-prints", slug: "prints", title: "Prints" },
       { id: "section-maquettes", slug: "maquettes", title: "Assamblage" },
       { id: "section-study", slug: "study", title: "Study" },
       { id: "section-calendar", slug: "calendar", title: "Calendar" },

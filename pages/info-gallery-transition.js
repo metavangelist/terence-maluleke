@@ -10,7 +10,7 @@
     updateFromScroll: function () {},
     revealGallery: function () {
       if (window.siteScroll?.scrollToSection) {
-        window.siteScroll.scrollToSection("gallery");
+        window.siteScroll.scrollToSection("paintings");
       }
     },
     scrollToInfo: function () {
@@ -20,7 +20,7 @@
     },
     scrollToGallery: function () {
       if (window.siteScroll?.scrollToSection) {
-        window.siteScroll.scrollToSection("gallery");
+        window.siteScroll.scrollToSection("paintings");
       }
     },
     trackTop: function () {

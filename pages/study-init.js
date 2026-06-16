@@ -12,7 +12,14 @@
       videoId: "galleryCrossVideo",
       playKey: "playGalleryCrossVideo",
       pauseKey: "pauseGalleryCrossVideo",
-      slugs: ["gallery"],
+      slugs: ["gallery", "paintings"],
+    },
+    {
+      sectionId: "section-prints",
+      videoId: "printsCrossVideo",
+      playKey: "playPrintsCrossVideo",
+      pauseKey: "pausePrintsCrossVideo",
+      slugs: ["prints"],
     },
   ];
 

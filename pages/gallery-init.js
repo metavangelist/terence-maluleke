@@ -52,8 +52,12 @@ const PREVIEW_BASE = "assets/gallery-preview";
 const VIEW_BASE = "assets/gallery-view";
 const ORIGINAL_BASE = "assets/images";
 const CACHE = "?v=20260614c";
-const ENQUIRY_EMAIL = "terence.ntsako@gmail.com";
+const ENQUIRY_EMAIL = "Contact@maluleke.art";
 const AFTER_FAIR_DIPTYCH_FILES = ["AFTER FAIR 002.jpg", "AFTER FAIR 001.jpg"];
+
+function isPrintMedium(item) {
+  return /^print\b/i.test(String(item?.medium || "").trim());
+}
 
 function afterFairDiptychPrimaryIndex() {
   return catalog.findIndex((item) => item.file === AFTER_FAIR_DIPTYCH_FILES[0]);
@@ -84,7 +88,7 @@ function resolveGalleryNavIndex(index) {
   return index;
 }
 
-function enquiryMailto(item, sectionLabel = "Gallery") {
+function enquiryMailto(item, sectionLabel = "Paintings") {
   const subject = encodeURIComponent(`Enquiry: ${item.title}`);
   const body = encodeURIComponent(
     `Hello,\n\nI would like to enquire about the artwork "${item.title}" (${sectionLabel}).\n\n`
@@ -92,7 +96,7 @@ function enquiryMailto(item, sectionLabel = "Gallery") {
   return `mailto:${ENQUIRY_EMAIL}?subject=${subject}&body=${body}`;
 }
 
-function syncEnquiryLinks(item, sectionLabel = "Gallery") {
+function syncEnquiryLinks(item, sectionLabel = "Paintings") {
   if (!item?.title) return;
 
   const href = enquiryMailto(item, sectionLabel);
@@ -133,62 +137,219 @@ let gallerySectionEnteredAt = 0;
 const GALLERY_EDGE_HITS_REQUIRED = 4;
 const GALLERY_EDGE_ARM_DELAY_MS = 1400;
 const GALLERY_WHEEL_THRESHOLD = 40;
-const GALLERY_EXIT_ARM_DELAY_MS = 400;
-let galleryExitToMaquettesArmed = true;
+const GALLERY_NEIGHBOR_EDGE_HITS_REQUIRED = 1;
+const GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS = 200;
+const GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS = 120;
+const GALLERY_EXIT_ARM_DELAY_MS = GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS;
+let galleryExitToPrintsArmed = true;
 let galleryExitArmTimer = 0;
 let galleryGridBottomWheelAccum = 0;
 let galleryGridBottomWheelResetTimer = 0;
 let galleryLastGridPageSeen = -1;
+let galleryIndexScrollReady = false;
+let galleryIndexScrollReadyToken = 0;
+let galleryIndexScrollReadyTimer = 0;
 let scheduleGallerySync = null;
 let pillScrollSyncing = false;
 let galleryViewMode = "grid";
+let galleryImmersive = false;
 let galleryIndexInitialized = false;
 let lastIndexPageCount = 0;
 let galleryHomeScrollSection = "home";
 
+function getGalleryIndexScroller() {
+  return document.getElementById("galleryIndexScroller");
+}
+
+function getGalleryIndexPageHeight(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return 0;
+  return scroller.clientHeight || window.innerHeight;
+}
+
+function clampGalleryIndexScroll(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return;
+
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  const lastPage = indexPageCount() - 1;
+  if (!pageHeight || lastPage < 0) return;
+
+  const maxScrollTop = lastPage * pageHeight;
+  if (scroller.scrollTop > maxScrollTop + 1) {
+    scroller.scrollTop = maxScrollTop;
+  }
+}
+
+function syncGalleryIndexPageHeights() {
+  const scroller = getGalleryIndexScroller();
+  if (!scroller) return 0;
+
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  if (!pageHeight) return 0;
+
+  const logicalPageCount = indexPageCount();
+  const domPages = [...scroller.querySelectorAll(".gallery-index__page")];
+
+  domPages.forEach((page, i) => {
+    if (i >= logicalPageCount) {
+      page.remove();
+      return;
+    }
+    page.style.minHeight = `${pageHeight}px`;
+    page.style.height = `${pageHeight}px`;
+  });
+
+  clampGalleryIndexScroll(scroller);
+
+  const expected = logicalPageCount * pageHeight;
+  galleryIndexScrollReady =
+    logicalPageCount > 0 && scroller.scrollHeight + 4 >= expected;
+  return expected;
+}
+
+function isGalleryIndexScrollReady(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return false;
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  const pages = indexPageCount();
+  if (!pageHeight || pages < 1) return false;
+  const domPages = scroller.querySelectorAll(".gallery-index__page").length;
+  return domPages === pages && scroller.scrollHeight + 4 >= pages * pageHeight;
+}
+
+function ensureGalleryIndexScrollReadySoon() {
+  window.clearTimeout(galleryIndexScrollReadyTimer);
+  galleryIndexScrollReadyTimer = window.setTimeout(() => {
+    void ensureGalleryIndexScrollReady();
+  }, 0);
+}
+
+async function ensureGalleryIndexScrollReady() {
+  const token = ++galleryIndexScrollReadyToken;
+  let retries = 0;
+
+  while (retries <= 48) {
+    fixGalleryHeights();
+    syncGalleryIndexPageHeights();
+
+    if (isGalleryIndexScrollReady()) {
+      galleryIndexScrollReady = true;
+      return true;
+    }
+
+    retries += 1;
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+    if (token !== galleryIndexScrollReadyToken) return galleryIndexScrollReady;
+    if (retries <= 48) {
+      await new Promise((resolve) => window.setTimeout(resolve, 20));
+    }
+  }
+
+  galleryIndexScrollReady = isGalleryIndexScrollReady();
+  return galleryIndexScrollReady;
+}
+
+function getGalleryIndexScrollHeight(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return 0;
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  return indexPageCount() * pageHeight;
+}
+
+function isGalleryGridAtTop(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return true;
+  return scroller.scrollTop <= 0;
+}
+
+function isGalleryGridAtBottom(scroller = getGalleryIndexScroller()) {
+  if (!scroller || !isGalleryIndexScrollReady(scroller)) return false;
+  if (getGalleryGridPageIndex() < indexPageCount() - 1) return false;
+
+  const scrollHeight = getGalleryIndexScrollHeight(scroller);
+  return scroller.scrollTop + scroller.clientHeight >= scrollHeight - 2;
+}
+
+function isInfoHandoff(targetSlug) {
+  return targetSlug === "info";
+}
+
+function edgeHitsRequired(targetSlug) {
+  return isInfoHandoff(targetSlug)
+    ? GALLERY_EDGE_HITS_REQUIRED
+    : GALLERY_NEIGHBOR_EDGE_HITS_REQUIRED;
+}
+
+function galleryEdgesArmedFor(targetSlug) {
+  const delay = isInfoHandoff(targetSlug)
+    ? GALLERY_EDGE_ARM_DELAY_MS
+    : GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS;
+  return Date.now() - gallerySectionEnteredAt >= delay;
+}
+
 function markGallerySectionEntered() {
   gallerySectionEnteredAt = Date.now();
   galleryEdgeHitCount = 0;
-  window.clearTimeout(galleryEdgeHitTimer);
+  galleryExitToPrintsArmed = false;
+  galleryGridBottomWheelAccum = 0;
+  galleryIndexScrollReady = false;
+  window.clearTimeout(galleryExitArmTimer);
+  window.clearTimeout(galleryGridBottomWheelResetTimer);
+  syncGalleryIndexPageHeights();
+  ensureGalleryIndexScrollReadySoon();
+  galleryExitArmTimer = window.setTimeout(() => {
+    galleryExitToPrintsArmed = true;
+  }, GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS);
 }
 
 function galleryEdgesArmed() {
-  return Date.now() - gallerySectionEnteredAt >= GALLERY_EDGE_ARM_DELAY_MS;
+  return galleryEdgesArmedFor("info");
 }
 
 function getGalleryGridPageIndex() {
-  const scroller = document.getElementById("galleryIndexScroller");
+  const scroller = getGalleryIndexScroller();
   if (!scroller) return 0;
 
-  const pageHeight = scroller.clientHeight;
+  const pageHeight = getGalleryIndexPageHeight(scroller);
   if (!pageHeight) return 0;
 
   return Math.min(
     indexPageCount() - 1,
-    Math.round(scroller.scrollTop / pageHeight)
+    Math.max(0, Math.round(scroller.scrollTop / pageHeight))
   );
 }
 
-function disarmGalleryExitToMaquettes() {
-  galleryExitToMaquettesArmed = false;
+function disarmGalleryExitToPrints() {
+  galleryExitToPrintsArmed = false;
   galleryGridBottomWheelAccum = 0;
   window.clearTimeout(galleryGridBottomWheelResetTimer);
   window.clearTimeout(galleryExitArmTimer);
   galleryExitArmTimer = window.setTimeout(() => {
-    galleryExitToMaquettesArmed = true;
+    galleryExitToPrintsArmed = true;
   }, GALLERY_EXIT_ARM_DELAY_MS);
 }
 
 function onGalleryGridPageChange() {
   if (galleryViewMode !== "grid") return;
 
+  const scroller = getGalleryIndexScroller();
+  if (scroller) {
+    clampGalleryIndexScroll(scroller);
+    const pageHeight = getGalleryIndexPageHeight(scroller);
+    const expectedHeight = indexPageCount() * pageHeight;
+    if (pageHeight > 0 && scroller.scrollHeight + 4 < expectedHeight) {
+      syncGalleryIndexPageHeights();
+      ensureGalleryIndexScrollReadySoon();
+    }
+  }
+
+  if (!isGalleryIndexScrollReady()) return;
+
   const page = getGalleryGridPageIndex();
   const lastPage = indexPageCount() - 1;
 
   if (page === lastPage && galleryLastGridPageSeen !== lastPage) {
-    disarmGalleryExitToMaquettes();
+    disarmGalleryExitToPrints();
   } else if (page !== lastPage) {
-    galleryExitToMaquettesArmed = true;
+    galleryExitToPrintsArmed = true;
     window.clearTimeout(galleryExitArmTimer);
     galleryGridBottomWheelAccum = 0;
   }
@@ -196,8 +357,8 @@ function onGalleryGridPageChange() {
   galleryLastGridPageSeen = page;
 }
 
-function isMaquettesDetailOpen() {
-  return document.getElementById("maquettesLayout")?.dataset.mode === "detail";
+function isPrintsDetailOpen() {
+  return document.getElementById("printsLayout")?.dataset.mode === "detail";
 }
 
 function setGalleryNavExitMode(on) {
@@ -215,7 +376,7 @@ function setGalleryNavExitMode(on) {
     return;
   }
 
-  if (isMaquettesDetailOpen()) return;
+  if (isPrintsDetailOpen()) return;
 
   homeNav.textContent = "home";
   homeNav.setAttribute("data-scroll-section", galleryHomeScrollSection);
@@ -597,7 +758,8 @@ function getGridPages() {
     pages.push(rest.slice(offset, offset + perPage));
   }
 
-  return pages.length ? pages : [[]];
+  const nonEmpty = pages.filter((page) => page.length > 0);
+  return nonEmpty.length ? nonEmpty : [[]];
 }
 
 function indexPageCount() {
@@ -762,7 +924,7 @@ function buildDetailShell() {
 
       <div class="gallery-rico__body">
         <aside class="gallery-rico__aside gallery-rico__aside--left">
-          <a class="gallery-rico__enquire" id="galleryRicoEnquire" href="mailto:terence.ntsako@gmail.com">Enquire About This Artwork</a>
+          <a class="gallery-rico__enquire" id="galleryRicoEnquire" href="mailto:Contact@maluleke.art">Enquire About This Artwork</a>
           ${coaPanelHtml()}
         </aside>
 
@@ -808,7 +970,7 @@ function scrollGridToIndex(index) {
 
 function showGalleryGrid(options = {}) {
   collapseGalleryCoa();
-  document.getElementById("galleryRicoViewport")?._galleryHideMagnifier?.();
+  setGalleryImmersive(false);
   galleryViewMode = "grid";
   galleryNavQueue = 0;
   galleryPageAnimating = false;
@@ -827,6 +989,7 @@ function showGalleryGrid(options = {}) {
   galleryLastGridPageSeen = -1;
   onGalleryGridPageChange();
   setGalleryNavExitMode(false);
+  ensureGalleryIndexScrollReadySoon();
 }
 
 function openGalleryDetail(index) {
@@ -841,7 +1004,7 @@ function openGalleryDetail(index) {
   resetGalleryViewportSize();
   setGalleryNavExitMode(true);
   window.galleryGoToIndex?.(index, false);
-  if (index >= catalog.length - 1) disarmGalleryExitToMaquettes();
+  if (index >= catalog.length - 1) disarmGalleryExitToPrints();
 }
 
 function setGalleryDetail(id, value) {
@@ -850,7 +1013,6 @@ function setGalleryDetail(id, value) {
 }
 
 function updateGalleryDisplay(index, options = {}) {
-  document.getElementById("galleryRicoViewport")?._galleryHideMagnifier?.();
   const item = catalog[index];
   if (!item) return;
 
@@ -869,7 +1031,7 @@ function updateGalleryDisplay(index, options = {}) {
   if (priceRow) priceRow.hidden = !showPrice;
   if (showPrice) setGalleryDetail("galleryRicoPrice", item.price);
 
-  syncEnquiryLinks(item, "Gallery");
+  syncEnquiryLinks(item, "Paintings");
 
   const prevBtn = document.getElementById("galleryRicoPrev");
   const nextBtn = document.getElementById("galleryRicoNext");
@@ -885,22 +1047,15 @@ function updateGalleryDisplay(index, options = {}) {
   if (options.skipFit) return;
 
   const viewport = document.getElementById("galleryRicoViewport");
+  const stage = document.getElementById("galleryRicoStage");
+  const frame = stage?.querySelector(`.gallery-rico__frame[data-art-index="${index}"]`);
   const { img } = promoteDetailImage(index);
-  if (!img) return;
+  if (!frame || !img) return;
 
-  const lockedAspect = viewport?.dataset.galleryAspect;
-  const imgAspect =
-    img.naturalWidth && img.naturalHeight
-      ? String(img.naturalWidth / img.naturalHeight)
-      : null;
+  if (!viewportNeedsRefit(viewport, frame)) return;
 
-  if (
-    viewport?.classList.contains("is-sized") &&
-    lockedAspect &&
-    imgAspect &&
-    lockedAspect === imgAspect
-  ) {
-    return;
+  if (galleryImmersive) {
+    setGalleryImmersiveFitPending(true);
   }
 
   if (viewport?.classList.contains("is-sized")) {
@@ -921,12 +1076,16 @@ function initGalleryPageNav() {
 
   let animTimer = 0;
 
-  function handoffToMaquettes() {
+  function handoffToPrints() {
     if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) {
       galleryNavQueue = 0;
       return;
     }
-    if (galleryPageAnimating || !galleryExitToMaquettesArmed) {
+    if (galleryPageAnimating || !galleryExitToPrintsArmed) {
+      galleryNavQueue = 0;
+      return;
+    }
+    if (galleryViewMode === "grid" && !isGalleryIndexScrollReady()) {
       galleryNavQueue = 0;
       return;
     }
@@ -935,6 +1094,7 @@ function initGalleryPageNav() {
     galleryPageAnimating = false;
     window.clearTimeout(animTimer);
     galleryEdgeHandoff = true;
+    window.printsRefreshScrollFx?.();
     window.siteScroll?.scrollToNextSection?.({ resetScroll: false });
     window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
   }
@@ -974,9 +1134,9 @@ function initGalleryPageNav() {
       galleryWheelLocked = false;
       window.clearTimeout(galleryWheelLockTimer);
       wheelAccum = 0;
-      disarmGalleryExitToMaquettes();
+      disarmGalleryExitToPrints();
     } else {
-      galleryExitToMaquettesArmed = true;
+      galleryExitToPrintsArmed = true;
       window.clearTimeout(galleryExitArmTimer);
     }
     processNavQueue();
@@ -1025,7 +1185,7 @@ function initGalleryPageNav() {
 
     if (galleryNavQueue > 0) {
       if (currentGalleryIndex >= catalog.length - 1) {
-        handoffToMaquettes();
+        handoffToPrints();
         return;
       }
       galleryNavQueue -= 1;
@@ -1114,7 +1274,7 @@ function initGalleryPageNav() {
   }
 
   function onGalleryWheelInPills(e) {
-    if (document.body.dataset.currentSection !== "gallery") return;
+    if (document.body.dataset.currentSection !== "paintings") return;
     if (galleryViewMode !== "detail") return;
     if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
@@ -1130,7 +1290,7 @@ function initGalleryPageNav() {
     const atLastSlide = currentGalleryIndex >= catalog.length - 1;
 
     if (atLastSlide && delta > 0) {
-      if (!galleryExitToMaquettesArmed) {
+      if (!galleryExitToPrintsArmed) {
         wheelAccum = 0;
         return;
       }
@@ -1141,7 +1301,7 @@ function initGalleryPageNav() {
 
       if (wheelAccum >= GALLERY_WHEEL_THRESHOLD) {
         wheelAccum = 0;
-        handoffToMaquettes();
+        handoffToPrints();
       }
       return;
     }
@@ -1169,7 +1329,7 @@ function initGalleryPageNav() {
   }, { passive: true });
 
   navArea.addEventListener("touchend", (e) => {
-    if (document.body.dataset.currentSection !== "gallery") return;
+    if (document.body.dataset.currentSection !== "paintings") return;
     if (galleryViewMode !== "detail") return;
     const touch = e.changedTouches[0];
     if (!touch) return;
@@ -1181,7 +1341,7 @@ function initGalleryPageNav() {
   }, { passive: true });
 
   document.addEventListener("keydown", (e) => {
-    if (document.body.dataset.currentSection !== "gallery") return;
+    if (document.body.dataset.currentSection !== "paintings") return;
     if (galleryViewMode !== "detail") return;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
@@ -1254,27 +1414,48 @@ function initGalleryIndexNav() {
   let gridUpHitTimer = 0;
   let gridUpLastTime = 0;
 
+  function prepSectionHandoff(targetSlug) {
+    if (targetSlug === "prints") window.printsRefreshScrollFx?.();
+    if (targetSlug === "maquettes") window.maquettesRefreshScrollFx?.();
+  }
+
   function doGridHandoff(targetSlug) {
-    if (targetSlug === "maquettes" && !galleryExitToMaquettesArmed) return;
-    galleryEdgeHandoff = true;
-    if (targetSlug === "maquettes") {
-      window.siteScroll?.scrollToNextSection?.({ resetScroll: false });
-    } else {
-      window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
+    if (!isGalleryIndexScrollReady()) return;
+    if (targetSlug === "prints" && !galleryExitToPrintsArmed) return;
+    prepSectionHandoff(targetSlug);
+    if (targetSlug === "prints") {
+      syncGalleryIndexPageHeights();
+      clampGalleryIndexScroll();
     }
+    galleryEdgeHandoff = true;
+    window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
     window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
   }
 
   scroller.addEventListener(
     "wheel",
     (event) => {
-      if (document.body.dataset.currentSection !== "gallery") return;
+      if (document.body.dataset.currentSection !== "paintings") return;
       if (galleryViewMode !== "grid") return;
       if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
-      const atTop = scroller.scrollTop <= 0;
-      const atBottom =
-        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+      if (!isGalleryIndexScrollReady()) {
+        event.preventDefault();
+        event.stopPropagation();
+        ensureGalleryIndexScrollReadySoon();
+        return;
+      }
+
+      const atTop = isGalleryGridAtTop(scroller);
+      const atBottom = isGalleryGridAtBottom(scroller);
+      const canScrollDown =
+        scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
+      const canScrollUp = scroller.scrollTop > 0;
+
+      if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {
+        event.stopPropagation();
+        return;
+      }
 
       if (atTop && event.deltaY < 0) {
         event.preventDefault();
@@ -1291,7 +1472,7 @@ function initGalleryIndexNav() {
         window.clearTimeout(gridUpHitTimer);
         gridUpHitTimer = window.setTimeout(() => { gridUpHitCount = 0; }, 1200);
 
-        if (gridUpHitCount < GALLERY_EDGE_HITS_REQUIRED) return;
+        if (gridUpHitCount < edgeHitsRequired("info")) return;
 
         gridUpHitCount = 0;
         doGridHandoff("info");
@@ -1302,21 +1483,15 @@ function initGalleryIndexNav() {
         event.preventDefault();
         event.stopPropagation();
 
-        if (!galleryExitToMaquettesArmed) {
+        if (!galleryExitToPrintsArmed) {
           galleryGridBottomWheelAccum = 0;
           return;
         }
 
-        galleryGridBottomWheelAccum += event.deltaY;
-        window.clearTimeout(galleryGridBottomWheelResetTimer);
-        galleryGridBottomWheelResetTimer = window.setTimeout(() => {
-          galleryGridBottomWheelAccum = 0;
-        }, 150);
+        if (!galleryEdgesArmedFor("prints")) return;
 
-        if (galleryGridBottomWheelAccum >= GALLERY_WHEEL_THRESHOLD) {
-          galleryGridBottomWheelAccum = 0;
-          doGridHandoff("maquettes");
-        }
+        galleryGridBottomWheelAccum = 0;
+        doGridHandoff("prints");
         return;
       }
     },
@@ -1338,21 +1513,26 @@ function initGalleryIndexNav() {
   let touchDownHitTimer = 0;
   let touchUpHitCount = 0;
   let touchUpHitTimer = 0;
+  let touchBottomHitCount = 0;
+  let touchBottomHitTimer = 0;
 
   scroller.addEventListener(
     "touchend",
     (event) => {
-      if (document.body.dataset.currentSection !== "gallery") return;
+      if (document.body.dataset.currentSection !== "paintings") return;
       if (galleryViewMode !== "grid") return;
       if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
+      if (!isGalleryIndexScrollReady()) {
+        ensureGalleryIndexScrollReadySoon();
+        return;
+      }
 
       const touch = event.changedTouches[0];
       if (!touch) return;
 
       const deltaY = touch.clientY - indexTouchStartY;
-      const atTop = scroller.scrollTop <= 0;
-      const atBottom =
-        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+      const atTop = isGalleryGridAtTop(scroller);
+      const atBottom = isGalleryGridAtBottom(scroller);
 
       if (atTop && deltaY > 36) {
         if (!galleryEdgesArmed()) return;
@@ -1362,7 +1542,7 @@ function initGalleryIndexNav() {
         window.clearTimeout(touchUpHitTimer);
         touchUpHitTimer = window.setTimeout(() => { touchUpHitCount = 0; }, 1200);
 
-        if (touchUpHitCount < 3) return;
+        if (touchUpHitCount < edgeHitsRequired("info")) return;
 
         touchUpHitCount = 0;
         doGridHandoff("info");
@@ -1370,114 +1550,136 @@ function initGalleryIndexNav() {
       }
 
       if (atBottom && deltaY < -36) {
-        if (!galleryExitToMaquettesArmed) return;
-        doGridHandoff("maquettes");
+        if (!galleryExitToPrintsArmed || !isGalleryIndexScrollReady()) return;
+        if (!galleryEdgesArmedFor("prints")) return;
+
+        touchBottomHitCount = 0;
+        doGridHandoff("prints");
       }
     },
     { passive: true }
   );
 }
 
-function initDetailMagnifier(viewport, options = {}) {
-  if (!viewport || viewport.dataset.magnifierBound === "1") return;
-  if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+function isGalleryMobileDetail() {
+  if (typeof window === "undefined") return false;
+  return (
+    window.innerWidth < 768 ||
+    window.matchMedia("(hover: none) and (pointer: coarse)").matches
+  );
+}
 
-  const lensSize = options.lensSize ?? 156;
-  const zoom = options.zoom ?? 2.4;
-  const getHighResSrc = options.getHighResSrc ?? ((img) => img.currentSrc || img.src);
-  const isActive = options.isActive ?? (() => true);
+function initGalleryImmersiveTap() {
+  const grid = document.getElementById("galleryGrid");
+  if (!grid || grid.dataset.immersiveTapBound === "1") return;
+  grid.dataset.immersiveTapBound = "1";
 
-  viewport.dataset.magnifierBound = "1";
+  let activePointer = null;
 
-  const lens = document.createElement("div");
-  lens.className = "gallery-magnify__lens";
-  lens.setAttribute("aria-hidden", "true");
-  viewport.appendChild(lens);
-
-  let lensBgSrc = "";
-
-  function hideLens() {
-    viewport.classList.remove("is-magnifying");
-    lensBgSrc = "";
-  }
-
-  function activeImgAtPoint(clientX, clientY) {
-    const frame = viewport.querySelector(".gallery-rico__frame.is-active");
-    if (!frame) return null;
-
-    for (const img of frame.querySelectorAll("img")) {
-      const rect = img.getBoundingClientRect();
-      if (
-        clientX >= rect.left &&
-        clientX <= rect.right &&
-        clientY >= rect.top &&
-        clientY <= rect.bottom
-      ) {
-        return img;
-      }
-    }
-
-    return null;
-  }
-
-  function onMove(event) {
-    if (!isActive()) {
-      hideLens();
-      return;
-    }
-
-    const img = activeImgAtPoint(event.clientX, event.clientY);
-    if (!img) {
-      hideLens();
-      return;
-    }
-
-    const imgRect = img.getBoundingClientRect();
-    const vpRect = viewport.getBoundingClientRect();
-
-    const src = getHighResSrc(img);
-    const x = event.clientX - imgRect.left;
-    const y = event.clientY - imgRect.top;
-    const lensX = event.clientX - vpRect.left - lensSize / 2;
-    const lensY = event.clientY - vpRect.top - lensSize / 2;
-
-    lens.style.width = `${lensSize}px`;
-    lens.style.height = `${lensSize}px`;
-    lens.style.left = `${lensX}px`;
-    lens.style.top = `${lensY}px`;
-    lens.style.backgroundSize = `${imgRect.width * zoom}px ${imgRect.height * zoom}px`;
-    lens.style.backgroundPosition = `${-(x * zoom - lensSize / 2)}px ${-(y * zoom - lensSize / 2)}px`;
-
-    if (src !== lensBgSrc) {
-      lensBgSrc = src;
-      lens.style.backgroundImage = `url("${src}")`;
-    }
-
-    viewport.classList.add("is-magnifying");
-  }
-
-  viewport.addEventListener("mouseleave", hideLens, { passive: true });
-  document.addEventListener(
-    "pointermove",
+  grid.addEventListener(
+    "pointerdown",
     (event) => {
-      if (!isActive()) {
-        hideLens();
-        return;
-      }
-      onMove(event);
+      if (galleryViewMode !== "detail") return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      if (!event.target.closest(".gallery-rico__frame.is-active")) return;
+      if (event.target.closest(".gallery-rico__nav")) return;
+      activePointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
     },
     { passive: true }
   );
-  viewport._galleryHideMagnifier = hideLens;
+
+  grid.addEventListener(
+    "pointerup",
+    (event) => {
+      if (!activePointer || event.pointerId !== activePointer.id) return;
+
+      const start = activePointer;
+      activePointer = null;
+
+      if (galleryViewMode !== "detail") return;
+      if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 16) return;
+
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      if (!hit?.closest(".gallery-rico__frame.is-active")) return;
+      if (hit.closest(".gallery-rico__nav")) return;
+
+      event.preventDefault();
+      toggleGalleryImmersive();
+    },
+    { passive: false }
+  );
+
+  grid.addEventListener("pointercancel", () => {
+    activePointer = null;
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (galleryViewMode !== "detail" || !galleryImmersive) return;
+    event.preventDefault();
+    setGalleryImmersive(false);
+  });
 }
 
-window.initDetailMagnifier = initDetailMagnifier;
+let galleryImmersiveStageObserver = null;
+
+function observeGalleryStageForImmersiveFit() {
+  galleryImmersiveStageObserver?.disconnect();
+  galleryImmersiveStageObserver = null;
+  if (!galleryImmersive || typeof ResizeObserver === "undefined") return;
+
+  const stageWrap = document.querySelector("#galleryDetail .gallery-rico__stage-wrap");
+  const stage = document.getElementById("galleryRicoStage");
+  const target = stageWrap || stage;
+  if (!target) return;
+
+  galleryImmersiveStageObserver = new ResizeObserver(() => {
+    if (!galleryImmersive || galleryViewMode !== "detail") return;
+    if (!document.getElementById("galleryDetail")?.classList.contains("is-fit-pending")) return;
+
+    resetGalleryImmersiveStageStability();
+    const viewport = document.getElementById("galleryRicoViewport");
+    const img = viewport?.querySelector(".gallery-rico__frame.is-active img");
+    scheduleFitGalleryViewport(img?.dataset.viewSrc);
+  });
+  galleryImmersiveStageObserver.observe(target);
+}
+
+function setGalleryImmersive(on) {
+  galleryImmersive = Boolean(on);
+  const detail = document.getElementById("galleryDetail");
+  detail?.classList.toggle("is-immersive", galleryImmersive);
+  galleryLockedSquareSize = null;
+  resetGalleryViewportSize();
+  setGalleryImmersiveFitPending(galleryImmersive);
+
+  if (!galleryImmersive) {
+    galleryImmersiveStageObserver?.disconnect();
+    galleryImmersiveStageObserver = null;
+    galleryFitRetries = 0;
+  } else {
+    galleryFitRetries = 0;
+    resetGalleryImmersiveStageStability();
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      observeGalleryStageForImmersiveFit();
+      const viewport = document.getElementById("galleryRicoViewport");
+      const img = viewport?.querySelector(".gallery-rico__frame.is-active img");
+      scheduleFitGalleryViewport(img?.dataset.viewSrc);
+    });
+  });
+}
+
+function toggleGalleryImmersive() {
+  setGalleryImmersive(!galleryImmersive);
+}
 
 function initGalleryInteractions() {
   if (galleryInteractionsInitialized) return;
   galleryInteractionsInitialized = true;
 
-  const viewport = document.getElementById("galleryRicoViewport");
   const prevBtn = document.getElementById("galleryRicoPrev");
   const nextBtn = document.getElementById("galleryRicoNext");
 
@@ -1489,14 +1691,6 @@ function initGalleryInteractions() {
   nextBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     window.galleryEnqueueStep?.(1);
-  });
-
-  initDetailMagnifier(viewport, {
-    isActive: () =>
-      galleryViewMode === "detail" &&
-      document.body.dataset.currentSection === "gallery" &&
-      !galleryPageAnimating,
-    getHighResSrc: (img) => img.dataset.viewSrc || img.currentSrc || img.src,
   });
 
   initGalleryCoaDisclosure();
@@ -1525,7 +1719,7 @@ function initGalleryCoaDisclosure() {
   });
 
   document.addEventListener("keydown", (e) => {
-    if (document.body.dataset.currentSection !== "gallery") return;
+    if (document.body.dataset.currentSection !== "paintings") return;
     if (galleryViewMode !== "detail") return;
     if (!root.classList.contains("is-open")) return;
     if (e.key === "Escape") {
@@ -1548,6 +1742,7 @@ function fixGalleryHeights() {
     grid.style.maxHeight = `${vh}px`;
   }
 
+  syncGalleryIndexPageHeights();
 }
 
 function promoteDetailImage(index) {
@@ -1567,6 +1762,7 @@ function resetGalleryViewportSize() {
   if (!viewport) return;
   viewport.classList.remove("is-sized");
   viewport.removeAttribute("data-gallery-aspect");
+  viewport.removeAttribute("data-gallery-fit-mode");
   viewport.style.removeProperty("width");
   viewport.style.removeProperty("height");
   viewport.style.removeProperty("aspect-ratio");
@@ -1581,7 +1777,9 @@ let galleryFitToken = 0;
 function looksLikePartialDecode(nw, nh) {
   if (!nw || !nh) return true;
   const ratio = nw / nh;
-  return ratio > 1.15 || ratio < 0.87;
+  // Only catch extreme partial JPEG row decodes (e.g. square 2380×945),
+  // not normal landscape/portrait artwork aspects.
+  return ratio > 2.35 || ratio < 0.42;
 }
 
 function isNearlySquare(nw, nh) {
@@ -1663,8 +1861,118 @@ const GALLERY_VIEWPORT_MAX = 720;
 const GALLERY_FIT_MAX_RETRIES = 32;
 const GALLERY_DETAIL_HEAD_RESERVE = 96;
 const GALLERY_DETAIL_NAV_RESERVE = 96;
+const GALLERY_IMMERSIVE_STAGE_H_RATIO = 0.88;
 
 let galleryLockedSquareSize = null;
+let galleryImmersiveLastStageH = -1;
+let galleryImmersiveStableStageCount = 0;
+
+function resetGalleryImmersiveStageStability() {
+  galleryImmersiveLastStageH = -1;
+  galleryImmersiveStableStageCount = 0;
+}
+
+function getGalleryNavColumnMetrics() {
+  const stageWrap = document.querySelector("#galleryDetail .gallery-rico__stage-wrap");
+  const prev = document.getElementById("galleryRicoPrev");
+  const next = document.getElementById("galleryRicoNext");
+  const prevW = prev?.offsetWidth || 36;
+  const nextW = next?.offsetWidth || 36;
+  let gap = 12;
+
+  if (stageWrap) {
+    const wrapStyle = getComputedStyle(stageWrap);
+    gap = parseFloat(wrapStyle.columnGap || wrapStyle.gap || "12") || 12;
+  }
+
+  return {
+    prevW,
+    nextW,
+    gap,
+    reserve: prevW + nextW + gap * 2,
+  };
+}
+
+function getGalleryImmersiveStageSize() {
+  const stageWrap = document.querySelector("#galleryDetail .gallery-rico__stage-wrap");
+  const stage = document.getElementById("galleryRicoStage");
+  const prev = document.getElementById("galleryRicoPrev");
+  const next = document.getElementById("galleryRicoNext");
+
+  let stageH = stageWrap?.clientHeight || 0;
+  let stageW = stage?.clientWidth || 0;
+
+  if (stageWrap && prev && next) {
+    const wrapStyle = getComputedStyle(stageWrap);
+    const gap = parseFloat(wrapStyle.columnGap || wrapStyle.gap || "4") || 4;
+    const innerW = next.offsetLeft - (prev.offsetLeft + prev.offsetWidth) - gap;
+    if (innerW > 80) stageW = innerW;
+  }
+
+  return { stageW, stageH };
+}
+
+function getGalleryImmersiveTargetMetrics() {
+  const detail = document.getElementById("galleryDetail");
+  const style = detail ? getComputedStyle(detail) : null;
+  return getGalleryImmersiveWindowMetrics(style);
+}
+
+function getGalleryImmersiveTargetStageH() {
+  return getGalleryImmersiveTargetMetrics().maxH;
+}
+
+function immersiveLayoutReady() {
+  const { stageW, stageH } = getGalleryImmersiveStageSize();
+  const targetH = getGalleryImmersiveTargetStageH();
+  if (stageW < 200 || targetH < 240) return false;
+  return stageH >= Math.round(targetH * GALLERY_IMMERSIVE_STAGE_H_RATIO);
+}
+
+function immersiveStageSizeStable() {
+  if (!immersiveLayoutReady()) {
+    resetGalleryImmersiveStageStability();
+    return false;
+  }
+
+  const { stageH } = getGalleryImmersiveStageSize();
+  if (Math.abs(stageH - galleryImmersiveLastStageH) <= 2) {
+    galleryImmersiveStableStageCount += 1;
+  } else {
+    galleryImmersiveLastStageH = stageH;
+    galleryImmersiveStableStageCount = 1;
+  }
+
+  return galleryImmersiveStableStageCount >= 2;
+}
+
+function setGalleryImmersiveFitPending(on) {
+  document.getElementById("galleryDetail")?.classList.toggle("is-fit-pending", Boolean(on));
+}
+
+function getGalleryImmersiveWindowMetrics(detailStyle) {
+  const padTop = detailStyle ? parseFloat(detailStyle.paddingTop) : 56;
+  const padBottom = detailStyle ? parseFloat(detailStyle.paddingBottom) : 6;
+  const padLeft = detailStyle ? parseFloat(detailStyle.paddingLeft) : 8;
+  const padRight = detailStyle ? parseFloat(detailStyle.paddingRight) : 8;
+  const { reserve } = getGalleryNavColumnMetrics();
+
+  return {
+    maxW: Math.max(240, Math.floor(window.innerWidth - padLeft - padRight - reserve)),
+    maxH: Math.max(240, Math.floor(window.innerHeight - padTop - padBottom)),
+  };
+}
+
+function getGalleryImmersiveFitMetrics(detailStyle) {
+  const { stageW, stageH } = getGalleryImmersiveStageSize();
+  if (stageW > 80 && stageH > 80) {
+    return {
+      maxW: Math.max(240, Math.floor(stageW)),
+      maxH: Math.max(240, Math.floor(stageH)),
+    };
+  }
+  return getGalleryImmersiveWindowMetrics(detailStyle);
+}
 
 function getGalleryDetailFitMetrics() {
   const detail = document.getElementById("galleryDetail");
@@ -1673,8 +1981,33 @@ function getGalleryDetailFitMetrics() {
   const padBottom = style ? parseFloat(style.paddingBottom) : 14;
   const padLeft = style ? parseFloat(style.paddingLeft) : 32;
   const padRight = style ? parseFloat(style.paddingRight) : 32;
-  const gap = window.innerWidth < 641 ? 20 : 28;
   const innerW = window.innerWidth - padLeft - padRight;
+
+  if (galleryImmersive) {
+    return getGalleryImmersiveFitMetrics(style);
+  }
+
+  if (isGalleryMobileDetail()) {
+    const { stageW, stageH } = getGalleryImmersiveStageSize();
+    const { reserve } = getGalleryNavColumnMetrics();
+
+    if (stageW > 80 && stageH > 160) {
+      return {
+        maxW: Math.max(240, Math.floor(stageW)),
+        maxH: Math.max(240, Math.floor(stageH)),
+      };
+    }
+
+    return {
+      maxW: Math.max(240, Math.round(innerW - reserve)),
+      maxH: Math.max(
+        240,
+        Math.round(window.innerHeight * (galleryImmersive ? 0.72 : 0.46))
+      ),
+    };
+  }
+
+  const gap = 28;
   const centerCol = (innerW - 2 * gap) * (2.4 / 4.4);
   const maxW = Math.min(
     Math.max(Math.round(centerCol - GALLERY_DETAIL_NAV_RESERVE), 320),
@@ -1695,7 +2028,93 @@ function computeGalleryViewportSize(nw, nh, maxW, maxH) {
   };
 }
 
+function getFrameNaturalSize(frame) {
+  if (!frame) return { nw: 0, nh: 0 };
+
+  if (frame.classList.contains("gallery-rico__frame--diptych")) {
+    const imgs = [...frame.querySelectorAll(".gallery-rico__img")];
+    if (imgs.length !== 2) return { nw: 0, nh: 0 };
+    const [topImg, bottomImg] = imgs;
+    if (!topImg.naturalWidth || !topImg.naturalHeight || !bottomImg.naturalWidth || !bottomImg.naturalHeight) {
+      return { nw: 0, nh: 0 };
+    }
+    return {
+      nw: Math.max(topImg.naturalWidth, bottomImg.naturalWidth),
+      nh: topImg.naturalHeight + bottomImg.naturalHeight,
+    };
+  }
+
+  const img = frame.querySelector(".gallery-rico__img");
+  return {
+    nw: img?.naturalWidth || 0,
+    nh: img?.naturalHeight || 0,
+  };
+}
+
+function getGalleryTargetViewportSize(nw, nh) {
+  const { maxW, maxH } = getGalleryDetailFitMetrics();
+
+  if (galleryImmersive) {
+    if (looksLikePartialDecode(nw, nh)) {
+      const side = Math.min(maxW, maxH);
+      return { w: side, h: side };
+    }
+    return computeGalleryViewportSize(nw, nh, maxW, maxH);
+  }
+
+  if (looksLikePartialDecode(nw, nh)) {
+    const side = Math.min(maxW, maxH);
+    return { w: side, h: side };
+  }
+
+  if (isNearlySquare(nw, nh)) {
+    const sized = computeGalleryViewportSize(nw, nh, maxW, maxH);
+    const side = Math.min(sized.w, sized.h);
+    return { w: side, h: side };
+  }
+
+  return computeGalleryViewportSize(nw, nh, maxW, maxH);
+}
+
+function viewportNeedsRefit(viewport, frame) {
+  if (!viewport || !frame) return true;
+
+  const fitMode = galleryImmersive ? "immersive" : "detail";
+  if (viewport.dataset.galleryFitMode !== fitMode) return true;
+
+  if (galleryImmersive) {
+    return !viewport.classList.contains("is-sized") || !immersiveLayoutReady();
+  }
+
+  const { nw, nh } = getFrameNaturalSize(frame);
+  if (!nw || !nh) return true;
+
+  if (!viewport.classList.contains("is-sized")) return true;
+
+  const { w: targetW, h: targetH } = getGalleryTargetViewportSize(nw, nh);
+  return (
+    Math.abs(viewport.offsetWidth - targetW) > 8 ||
+    Math.abs(viewport.offsetHeight - targetH) > 8
+  );
+}
+
+function applyGalleryImmersiveViewportFit(viewport, nw, nh) {
+  viewport.style.removeProperty("width");
+  viewport.style.removeProperty("height");
+  viewport.style.removeProperty("max-width");
+  viewport.style.removeProperty("max-height");
+  viewport.style.removeProperty("--gallery-art-ratio");
+  viewport.dataset.galleryFitMode = "immersive";
+  if (nw && nh) viewport.dataset.galleryAspect = String(nw / nh);
+  viewport.classList.add("is-sized");
+}
+
 function applyGalleryViewportFit(viewport, nw, nh) {
+  if (galleryImmersive) {
+    applyGalleryImmersiveViewportFit(viewport, nw, nh);
+    return;
+  }
+
   const { maxW, maxH } = getGalleryDetailFitMetrics();
   let w;
   let h;
@@ -1721,6 +2140,7 @@ function applyGalleryViewportFit(viewport, nw, nh) {
   viewport.style.width = `${w}px`;
   viewport.style.height = `${h}px`;
   viewport.dataset.galleryAspect = String(w / h);
+  viewport.dataset.galleryFitMode = galleryImmersive ? "immersive" : "detail";
   viewport.classList.add("is-sized");
 
   if (viewport.offsetWidth < w - 2 || viewport.offsetHeight < h - 2) {
@@ -1769,6 +2189,114 @@ async function fitActiveDiptychViewport(viewport, token) {
   return true;
 }
 
+async function waitForStableFrameNaturalSize(frame, token) {
+  let lastKey = "";
+  let stableCount = 0;
+  let retries = 0;
+
+  while (stableCount < 2 && retries <= GALLERY_FIT_MAX_RETRIES) {
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+    if (token !== galleryFitToken || galleryViewMode !== "detail" || !galleryImmersive) return null;
+
+    const size = getFrameNaturalSize(frame);
+    if (!size.nw || !size.nh) {
+      retries += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 60));
+      continue;
+    }
+
+    if (looksLikePartialDecode(size.nw, size.nh)) {
+      const imgs = frame.classList.contains("gallery-rico__frame--diptych")
+        ? [...frame.querySelectorAll(".gallery-rico__img")]
+        : [frame.querySelector(".gallery-rico__img")].filter(Boolean);
+
+      await Promise.all(
+        imgs.map(async (img) => {
+          if (img && typeof img.decode === "function") {
+            try {
+              await img.decode();
+            } catch {}
+          }
+        })
+      );
+      if (token !== galleryFitToken || !galleryImmersive) return null;
+
+      lastKey = "";
+      stableCount = 0;
+      retries += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 60));
+      continue;
+    }
+
+    const key = `${size.nw}x${size.nh}`;
+    if (key === lastKey) stableCount += 1;
+    else {
+      lastKey = key;
+      stableCount = 1;
+    }
+
+    if (stableCount < 2) {
+      retries += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 60));
+    }
+  }
+
+  const finalSize = getFrameNaturalSize(frame);
+  if (!finalSize.nw || !finalSize.nh || looksLikePartialDecode(finalSize.nw, finalSize.nh)) {
+    return null;
+  }
+  return finalSize;
+}
+
+function maybeRevealImmersiveViewport(viewport, frame) {
+  if (!galleryImmersive || !viewport || !frame) return false;
+  if (!immersiveLayoutReady() || !immersiveStageSizeStable()) return false;
+
+  const { nw, nh } = getFrameNaturalSize(frame);
+  if (!nw || !nh || looksLikePartialDecode(nw, nh)) return false;
+
+  applyGalleryImmersiveViewportFit(viewport, nw, nh);
+  setGalleryImmersiveFitPending(false);
+  return true;
+}
+
+async function waitForImmersiveLayoutAndFit(token, viewport, frame) {
+  galleryFitRetries = 0;
+  resetGalleryImmersiveStageStability();
+
+  while (galleryFitRetries <= GALLERY_FIT_MAX_RETRIES) {
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+    if (token !== galleryFitToken || galleryViewMode !== "detail" || !galleryImmersive) return;
+
+    if (!immersiveLayoutReady() || !immersiveStageSizeStable()) {
+      galleryFitRetries += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 60));
+      continue;
+    }
+
+    const finalSize = await waitForStableFrameNaturalSize(frame, token);
+    if (token !== galleryFitToken || !galleryImmersive) return;
+    if (!finalSize) {
+      galleryFitRetries += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 60));
+      continue;
+    }
+
+    if (maybeRevealImmersiveViewport(viewport, frame)) return;
+
+    galleryFitRetries += 1;
+    await new Promise((resolve) => window.setTimeout(resolve, 60));
+  }
+
+  const fallbackSize = getFrameNaturalSize(frame);
+  applyGalleryImmersiveViewportFit(viewport, fallbackSize.nw, fallbackSize.nh);
+  setGalleryImmersiveFitPending(false);
+}
+
 async function ensureGalleryViewportFit(token, expectedSrc) {
   if (token !== galleryFitToken || galleryViewMode !== "detail") return;
 
@@ -1782,20 +2310,36 @@ async function ensureGalleryViewportFit(token, expectedSrc) {
   if (!(await waitForGalleryDetailReady(token))) return;
   if (token !== galleryFitToken || galleryViewMode !== "detail") return;
 
+  const srcToWaitFor = expectedSrc || img.dataset.viewSrc || img.src;
+
   if (frame.classList.contains("gallery-rico__frame--diptych")) {
+    await Promise.all(
+      [...frame.querySelectorAll(".gallery-rico__img")].map((diptychImg) =>
+        waitForGalleryImageReady(diptychImg, diptychImg.dataset.viewSrc || diptychImg.src)
+      )
+    );
+    if (token !== galleryFitToken || galleryViewMode !== "detail") return;
+
+    if (galleryImmersive) {
+      await waitForImmersiveLayoutAndFit(token, viewport, frame);
+      return;
+    }
+
     await fitActiveDiptychViewport(viewport, token);
     return;
   }
 
-  const srcToWaitFor = expectedSrc || img.dataset.viewSrc || img.src;
+  await waitForGalleryImageReady(img, srcToWaitFor);
+  if (token !== galleryFitToken || galleryViewMode !== "detail") return;
+
+  if (galleryImmersive) {
+    await waitForImmersiveLayoutAndFit(token, viewport, frame);
+    return;
+  }
+
   galleryFitRetries = 0;
 
-  if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-    applyGalleryViewportFit(viewport, img.naturalWidth, img.naturalHeight);
-  } else {
-    await waitForGalleryImageReady(img, srcToWaitFor);
-    if (token !== galleryFitToken || galleryViewMode !== "detail") return;
-    if (!img.naturalWidth || !img.naturalHeight) return;
+  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
     applyGalleryViewportFit(viewport, img.naturalWidth, img.naturalHeight);
   }
 
@@ -1804,11 +2348,10 @@ async function ensureGalleryViewportFit(token, expectedSrc) {
   img.decode()
     .then(() => {
       if (token !== galleryFitToken || galleryViewMode !== "detail") return;
-      const nw = img.naturalWidth;
-      const nh = img.naturalHeight;
-      if (nw && nh && !looksLikePartialDecode(nw, nh)) {
-        applyGalleryViewportFit(viewport, nw, nh);
-      }
+      const decodedW = img.naturalWidth;
+      const decodedH = img.naturalHeight;
+      if (!decodedW || !decodedH || looksLikePartialDecode(decodedW, decodedH)) return;
+      applyGalleryViewportFit(viewport, decodedW, decodedH);
     })
     .catch(() => {});
 }
@@ -1881,11 +2424,13 @@ async function buildGallery() {
   wireIndexImages();
   wireGalleryImages();
   fixGalleryHeights();
+  syncGalleryIndexPageHeights();
   initGalleryIndexNav();
   initGalleryPageNav();
   initGalleryInteractions();
   updateGalleryDisplay(0);
   showGalleryGrid({ resetScroll: true });
+  ensureGalleryIndexScrollReadySoon();
 }
 
 async function loadCatalog() {
@@ -1909,6 +2454,7 @@ async function loadCatalog() {
         );
         const sg = await loadGallerySgData();
         catalog = mergeMissingGalleryPanels(catalog, sg);
+        catalog = catalog.filter((item) => !isPrintMedium(item));
         return;
       }
     } catch (_) {
@@ -1947,6 +2493,7 @@ async function loadCatalog() {
   });
 
   catalog = sortCatalogItems(catalog);
+  catalog = catalog.filter((item) => !isPrintMedium(item));
 }
 
 function prefetchView(index) {
@@ -2003,6 +2550,7 @@ async function rebuildGalleryLayout() {
 async function initGallery() {
   await loadCatalog();
   await buildGallery();
+  initGalleryImmersiveTap();
   forceGalleryInternalScroll();
 
   window.galleryCatalogReady = true;
@@ -2015,9 +2563,18 @@ async function initGallery() {
     prefetchView,
   };
 
-  window.galleryRefreshScrollFx = () => scheduleGallerySync?.();
+  window.galleryRefreshScrollFx = () => {
+    fixGalleryHeights();
+    syncGalleryIndexPageHeights();
+    ensureGalleryIndexScrollReadySoon();
+    scheduleGallerySync?.();
+  };
+  window.ensureGalleryIndexScrollReady = ensureGalleryIndexScrollReady;
+  window.markGallerySectionEntered = markGallerySectionEntered;
   window.galleryShowGrid = showGalleryGrid;
   window.galleryOpenDetail = openGalleryDetail;
+  window.galleryIsImmersive = () => galleryImmersive;
+  window.gallerySetImmersive = setGalleryImmersive;
   window.resetEnquiryContact = resetEnquiryContact;
 
   document.addEventListener("gallery:ready", fixGalleryHeights);
@@ -2034,7 +2591,7 @@ async function initGallery() {
 
   if (document.body) {
     new MutationObserver(() => {
-      if (document.body.dataset.currentSection === "gallery") {
+      if (document.body.dataset.currentSection === "paintings") {
         markGallerySectionEntered();
       }
     }).observe(document.body, { attributes: true, attributeFilter: ["data-current-section"] });

@@ -1,4 +1,4 @@
-:is(#section-gallery, #section-study) {
+:is(#section-gallery, #section-prints, #section-study) {
   --cross-veil-grey: rgba(28, 28, 28, 0.72);
   --cross-veil-blur: 14px;
   background: #3a4248;
@@ -93,7 +93,7 @@
   pointer-events: auto;
 }
 
-:is(#section-gallery, #section-study) .cross-bg {
+:is(#section-gallery, #section-prints, #section-study) .cross-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -101,7 +101,7 @@
   background: #2f363b;
 }
 
-:is(#section-gallery, #section-study) .cross-video {
+:is(#section-gallery, #section-prints, #section-study) .cross-video {
   position: absolute;
   inset: 0;
   display: block;
@@ -114,7 +114,7 @@
   pointer-events: none;
 }
 
-:is(#section-gallery, #section-study) .cross-veil {
+:is(#section-gallery, #section-prints, #section-study) .cross-veil {
   position: absolute;
   inset: 0;
   z-index: 1;
@@ -158,7 +158,7 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :is(#section-gallery, #section-study) .cross-veil {
+  :is(#section-gallery, #section-prints, #section-study) .cross-veil {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background:
@@ -173,7 +173,7 @@
 }
 
 @media (max-width: 768px) {
-  :is(#section-gallery, #section-study) {
+  :is(#section-gallery, #section-prints, #section-study) {
     --cross-veil-blur: 12px;
   }
 

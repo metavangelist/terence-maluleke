@@ -208,6 +208,7 @@ body.site-scroll.home-anon {
 
 /* Gallery must be able to scroll internally */
 #galleryGrid,
+#printsGrid,
 .gallery-grid,
 .info-gallery__gallery-scroll {
   touch-action: pan-y;

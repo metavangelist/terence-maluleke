@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-server.js",
-    "dev:local": "HOST=127.0.0.1 node scripts/dev-server.js"
+    "dev:local": "HOST=127.0.0.1 node scripts/dev-server.js",
+    "dev:python": "python3 -m http.server 5501 --bind 0.0.0.0"
   },
   "devDependencies": {
     "http-server": "^14.1.1",

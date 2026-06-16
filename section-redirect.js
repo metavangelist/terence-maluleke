@@ -3,7 +3,7 @@
   const map = {
     "index.html": "home",
     "info.html": "info",
-    "gallery.html": "gallery",
+    "gallery.html": "paintings",
     "maquettes.html": "home",
     "shows.html": "shows",
     "archives.html": "home",

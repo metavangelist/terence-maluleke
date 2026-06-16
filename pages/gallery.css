@@ -13,6 +13,7 @@
 }
 
 #section-gallery,
+#section-prints,
 #section-maquettes {
   position: relative;
   width: 100%;
@@ -24,7 +25,8 @@
   contain: layout style paint;
 }
 
-#section-gallery {
+#section-gallery,
+#section-prints {
   background: #3a4248;
   --gr-glass-blur: 14px;
   --gr-glass-saturate: 1;
@@ -40,16 +42,26 @@
   --gr-glass-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-page,
-:is(#section-gallery, #section-maquettes) #galleryGrid,
-#section-maquettes .gallery-page,
+#section-maquettes .gallery-index__img,
+#section-maquettes .gallery-rico__img {
+  background: transparent;
+}
+
+#section-maquettes .gallery-rico--detail .gallery-rico__viewport {
+  overflow: hidden;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-page,
+:is(#section-gallery, #section-prints, #section-maquettes) #galleryGrid,
+#section-prints #printsGrid,
 #section-maquettes #maquettesGrid {
   z-index: 2;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-page,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-page,
 #section-maquettes .gallery-page,
-:is(#section-gallery, #section-maquettes) #galleryGrid,
+:is(#section-gallery, #section-prints, #section-maquettes) #galleryGrid,
+#section-prints #printsGrid,
 #section-maquettes #maquettesGrid {
   position: relative;
   width: 100%;
@@ -58,7 +70,7 @@
   background: transparent;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico {
   position: relative;
   width: 100%;
   height: 100%;
@@ -80,33 +92,33 @@
 
 /* ── Thando-style grid + detail layout ── */
 
-:is(#section-gallery, #section-maquettes) .gallery-layout {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-layout {
   width: 100%;
   height: 100%;
   min-height: 0;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-layout[data-mode="grid"] .gallery-rico--detail {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-layout[data-mode="grid"] .gallery-rico--detail {
   display: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-layout[data-mode="detail"] .gallery-index {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-layout[data-mode="detail"] .gallery-index {
   display: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail {
   overflow: visible;
 }
 
 /* ── Gallery grid index (before click) ── */
 
-:is(#section-gallery, #section-maquettes) .gallery-index {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index {
   width: 100%;
   height: 100%;
   min-height: 0;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__scroller {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__scroller {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
@@ -114,11 +126,22 @@
   scroll-snap-type: y mandatory;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
-  contain: strict;
-  content-visibility: auto;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__page {
+.prints-index__empty {
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  margin: 0;
+  font-family: var(--gr-sans);
+  font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__page {
   height: 100%;
   min-height: 100%;
   scroll-snap-align: start;
@@ -133,12 +156,9 @@
     clamp(12px, 3vw, 32px)
     max(14px, env(safe-area-inset-bottom))
     clamp(12px, 3vw, 32px);
-  contain: layout style paint;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 100vh;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__grid {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__grid {
   display: grid;
   grid-template-columns: repeat(var(--gi-cols, 3), minmax(0, 1fr));
   grid-template-rows: repeat(var(--gi-rows, 2), minmax(0, 1fr));
@@ -151,7 +171,7 @@
   align-self: stretch;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__cell {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__cell {
   appearance: none;
   -webkit-appearance: none;
   display: flex;
@@ -175,13 +195,13 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__cell:hover,
-:is(#section-gallery, #section-maquettes) .gallery-index__cell:focus-visible {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__cell:hover,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__cell:focus-visible {
   box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
   outline: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__img {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__img {
   position: relative;
   z-index: 1;
   display: block;
@@ -198,13 +218,13 @@
   pointer-events: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__cell--diptych {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__cell--diptych {
   grid-column: var(--diptych-col, 3);
   grid-row: 1 / span 2;
   padding: clamp(8px, 1.2vw, 12px);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__diptych {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__diptych {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -215,13 +235,13 @@
   min-height: 0;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-index__cell--diptych .gallery-index__img {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__cell--diptych .gallery-index__img {
   flex: 1 1 0;
   min-height: 0;
   max-height: calc(50% - 0.35rem);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__frame--diptych {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,7 +249,7 @@
   height: 100%;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__diptych {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__diptych {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -240,28 +260,28 @@
   min-height: 0;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img {
   width: auto;
   height: auto;
   max-width: 100%;
   object-fit: contain;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img--diptych-top,
-:is(#section-gallery, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img--diptych-bottom {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img--diptych-top,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__frame--diptych .gallery-rico__img--diptych-bottom {
   flex: 1 1 0;
   min-height: 0;
   max-height: calc(50% - 0.35rem);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__head {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__head {
   grid-row: 1;
   text-align: center;
   z-index: 3;
   margin-bottom: clamp(6px, 1.2vh, 14px);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__head {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__head {
   min-height: 5.5rem;
 }
 
@@ -281,7 +301,7 @@
   color: #ffffff;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__body {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__body {
   grid-row: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2.4fr) minmax(0, 1fr);
@@ -290,7 +310,7 @@
   align-items: stretch;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
   grid-row: unset;
   min-height: 0;
   height: 100%;
@@ -300,11 +320,11 @@
   overflow: visible;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
   overflow: visible;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__stage-wrap {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__stage-wrap {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -314,32 +334,32 @@
   height: 100%;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__body {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__body {
   align-items: stretch;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
   align-self: stretch;
   height: 100%;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
   height: 100%;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport {
   width: auto;
   height: auto;
   flex-shrink: 0;
 }
 
 /* JS sets explicit px width/height — never clamp against a stage that may still be settling. */
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport.is-sized {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport.is-sized {
   max-width: none;
   max-height: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__aside--left {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__aside--left {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -348,14 +368,14 @@
   padding-left: clamp(4px, 1.5vw, 16px);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__aside--right {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__aside--right {
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding-right: clamp(4px, 1.5vw, 16px);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire {
   margin: 0;
   pointer-events: auto;
   border: 0;
@@ -372,13 +392,13 @@
     color 0.2s ease;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire:hover {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire:hover {
   box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__details {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__details {
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -394,7 +414,7 @@
   transform: translateZ(0);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__detail dt {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__detail dt {
   margin: 0 0 4px;
   font-family: "Helvetica Neue", Arial, sans-serif;
   font-size: clamp(9px, 2.2vw, 11px);
@@ -404,7 +424,7 @@
   color: rgba(255, 255, 255, 0.58);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__detail dd {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__detail dd {
   margin: 0;
   font-family: "Helvetica Neue", Arial, sans-serif;
   font-size: clamp(11px, 2.4vw, 13px);
@@ -413,7 +433,7 @@
   color: #ffffff;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa {
   width: 100%;
   max-width: min(100%, 280px);
   border: 0;
@@ -428,11 +448,11 @@
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa.is-open {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa.is-open {
   box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-toggle {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-toggle {
   appearance: none;
   display: block;
   width: 100%;
@@ -453,25 +473,25 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-toggle:hover {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-toggle:hover {
   color: rgba(255, 255, 255, 0.82);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-panel {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-panel {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.28s ease;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa.is-open .gallery-rico__coa-panel {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa.is-open .gallery-rico__coa-panel {
   grid-template-rows: 1fr;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-panel-inner {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-panel-inner {
   overflow: hidden;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-body {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-body {
   padding: 0 clamp(12px, 2vw, 14px) clamp(10px, 1.5vh, 12px);
   font-family: "Helvetica Neue", Arial, sans-serif;
   font-size: clamp(10px, 2.2vw, 12px);
@@ -480,40 +500,40 @@
   color: rgba(255, 255, 255, 0.82);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-body p {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-body p {
   margin: 0 0 0.75em;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__coa-body p:last-child {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-body p:last-child {
   margin-bottom: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(#section-gallery, #section-maquettes) .gallery-rico__coa-panel {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa-panel {
     transition: none;
   }
 }
 
 @media (min-width: 1024px) {
-  :is(#section-gallery, #section-maquettes) .gallery-rico__detail dt {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__detail dt {
     font-size: 10px;
     letter-spacing: 0.12em;
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-rico__detail dd {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__detail dd {
     font-size: 13px;
     line-height: 1.5;
   }
 }
 
 @media (min-width: 1024px) {
-  :is(#section-gallery, #section-maquettes) {
+  :is(#section-gallery, #section-prints, #section-maquettes) {
     --gr-glass-blur: 20px;
     --gr-glass-saturate: 1.12;
   }
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__nav {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav {
   isolation: isolate;
   transform: translateZ(0);
   appearance: none;
@@ -540,27 +560,27 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__nav::before {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav::before {
   display: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__nav span {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav span {
   position: relative;
   z-index: 1;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__nav:hover:not(:disabled) {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav:hover:not(:disabled) {
   color: #fff;
   box-shadow: 0 22px 56px rgba(0, 0, 0, 0.34);
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__nav:disabled {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav:disabled {
   opacity: 0.38;
   cursor: default;
 }
 
 @media (min-width: 1024px) {
-  :is(#section-gallery, #section-maquettes) .gallery-rico__nav {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav {
     width: 44px;
     height: 44px;
     font-size: 20px;
@@ -569,79 +589,199 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :is(#section-gallery, #section-maquettes) .gallery-rico__nav {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__nav {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: rgba(28, 28, 30, 0.94);
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-index__cell {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-index__cell {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: rgba(28, 28, 28, 0.94);
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-rico__details,
-  :is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire,
-  :is(#section-gallery, #section-maquettes) .gallery-rico__coa {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__details,
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__enquire,
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__coa {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: rgba(28, 28, 28, 0.94);
   }
 }
 
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__frame.is-active,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__frame.is-active .gallery-rico__diptych,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__frame.is-active .gallery-rico__img {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive {
+  grid-template-rows: minmax(0, 1fr);
+  padding:
+    max(56px, calc(env(safe-area-inset-top) + 48px))
+    clamp(2px, 0.5vw, 8px)
+    max(6px, env(safe-area-inset-bottom))
+    clamp(2px, 0.5vw, 8px);
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__head,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__aside--left,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__aside--right {
+  display: none !important;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__body {
+  grid-column: 1;
+  grid-row: 1;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__stage-wrap {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+  gap: clamp(10px, 2vw, 14px);
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__stage {
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__viewport,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__viewport.is-sized {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0;
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__frame.is-active,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__frame.is-active .gallery-rico__diptych {
+  width: 100%;
+  height: 100%;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive.is-fit-pending .gallery-rico__viewport {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive:not(.is-fit-pending) .gallery-rico__viewport {
+  opacity: 1;
+  visibility: visible;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive.is-fit-pending .gallery-rico__nav {
+  visibility: visible;
+}
+
 @media (max-width: 768px) {
-  :is(#section-gallery, #section-maquettes) .gallery-rico__body {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__body {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) auto auto;
     gap: 14px;
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-rico__stage-wrap {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__stage-wrap {
     grid-row: 1;
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-rico__aside--left {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage-wrap {
+    min-height: min(48vh, 440px);
+    gap: clamp(12px, 3.2vw, 18px);
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
+    box-sizing: border-box;
+    padding-inline: clamp(2px, 0.6vw, 6px);
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport {
+    max-width: none;
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive {
+    padding:
+      max(48px, calc(env(safe-area-inset-top) + 36px))
+      clamp(2px, 1vw, 6px)
+      max(4px, env(safe-area-inset-bottom))
+      clamp(2px, 1vw, 6px);
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__stage-wrap {
+    gap: clamp(12px, 3.2vw, 18px);
+    min-height: 0;
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__stage {
+    padding-inline: clamp(2px, 0.6vw, 6px);
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__body {
+    min-height: 0;
+  }
+
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__aside--left {
     grid-row: 2;
     align-items: flex-start;
     padding-left: 0;
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-rico__aside--right {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__aside--right {
     grid-row: 3;
     padding-right: 0;
   }
 
-  :is(#section-gallery, #section-maquettes) .gallery-rico__details {
+  :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__details {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 12px 24px;
   }
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__pills-wrap,
-:is(#section-gallery, #section-maquettes) .gallery-rico__pills {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__pills-wrap,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__pills {
   --gr-pill-visible: 3;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__pills {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__pills {
   padding-block: 0;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__stage {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__stage {
   background-color: transparent;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__viewport,
-:is(#section-gallery, #section-maquettes) .gallery-rico__frame,
-:is(#section-gallery, #section-maquettes) .gallery-rico__img {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__viewport,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__frame,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__img {
   background: none;
   border: none;
   outline: none;
   box-shadow: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico--detail .gallery-rico__img {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__img {
   display: block;
   width: 100%;
   height: 100%;
@@ -650,15 +790,15 @@
   object-fit: contain;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-rico__viewport:focus,
-:is(#section-gallery, #section-maquettes) .gallery-rico__viewport:focus-visible,
-:is(#section-gallery, #section-maquettes) img:focus,
-:is(#section-gallery, #section-maquettes) img:focus-visible {
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__viewport:focus,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__viewport:focus-visible,
+:is(#section-gallery, #section-prints, #section-maquettes) img:focus,
+:is(#section-gallery, #section-prints, #section-maquettes) img:focus-visible {
   outline: none;
   box-shadow: none;
 }
 
-:is(#section-gallery, #section-maquettes) .gallery-page,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-page,
 #section-maquettes .gallery-page {
   flex: 1 1 auto;
   min-height: 0;
@@ -667,8 +807,9 @@
   flex-direction: column;
 }
 
-:is(#section-gallery, #section-maquettes) #galleryGrid,
-:is(#section-gallery, #section-maquettes) #maquettesGrid {
+:is(#section-gallery, #section-prints, #section-maquettes) #galleryGrid,
+#section-prints #printsGrid,
+:is(#section-gallery, #section-prints, #section-maquettes) #maquettesGrid {
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
@@ -686,7 +827,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  touch-action: pan-y pinch-zoom;
+  touch-action: pan-y;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport,
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__img {
+  touch-action: manipulation;
 }
 
 .gallery-rico__viewport {
@@ -697,45 +844,6 @@
   margin: 0 auto;
   cursor: default;
   outline: none;
-}
-
-.gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"] {
-  cursor: default;
-}
-
-.gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"].is-magnifying {
-  cursor: crosshair;
-}
-
-.gallery-magnify__lens {
-  position: absolute;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 10px 36px rgba(0, 0, 0, 0.42),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.12);
-  pointer-events: none;
-  z-index: 6;
-  background-repeat: no-repeat;
-  background-color: #1a1a1a;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.12s ease;
-}
-
-.gallery-rico__viewport.is-magnifying .gallery-magnify__lens {
-  opacity: 1;
-  visibility: visible;
-}
-
-@media (hover: none), (pointer: coarse) {
-  .gallery-rico--detail .gallery-rico__viewport[data-magnifier-bound="1"] {
-    cursor: default;
-  }
-
-  .gallery-magnify__lens {
-    display: none !important;
-  }
 }
 
 .gallery-rico__frame {

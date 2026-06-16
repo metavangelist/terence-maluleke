@@ -9,11 +9,20 @@ Artist website for Terence Ntsako Maluleke — digital artist and painter.
 
 ## Local preview
 
+From the v2 folder:
+
 ```bash
-python3 -m http.server 5501
+npm run dev
 ```
 
-Open http://localhost:5501
+- **Desktop:** http://localhost:5501
+- **Phone (same Wi‑Fi):** use the `http://<your-mac-ip>:5501/` URL printed by `npm run dev` — do **not** use `localhost` on your phone.
+
+Alternative (Python):
+
+```bash
+python3 -m http.server 5501 --bind 0.0.0.0
+```
 
 ## Structure
 

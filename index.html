@@ -16,11 +16,11 @@
   <link rel="stylesheet" href="mobile.css?v=20260530" />
   <link rel="stylesheet" href="site-nav.css?v=20260678" />
   <link rel="stylesheet" href="pages/info.css?v=20260607" />
-  <link rel="stylesheet" href="pages/gallery.css?v=20260614b" />
+  <link rel="stylesheet" href="pages/gallery.css?v=20260615h" />
   <link rel="stylesheet" href="pages/info-gallery-transition.css?v=20260530m" />
   <link rel="stylesheet" href="site-scroll.css?v=20260809s" />
   <link rel="stylesheet" href="pages/shows.css?v=20260631" />
-  <link rel="stylesheet" href="pages/study.css?v=20260809l" />
+  <link rel="stylesheet" href="pages/study.css?v=20260809m" />
   <link rel="stylesheet" href="site-loader.css?v=20260678" />
 </head>
 <body class="site-scroll home-anon is-loading">
@@ -31,7 +31,7 @@
     </div>
   </div>
   <nav class="site-nav" id="siteNav" aria-label="Site links">
-    <a class="site-nav__contact" href="mailto:terence.ntsako@gmail.com">contact</a>
+    <a class="site-nav__contact" href="mailto:Contact@maluleke.art">contact</a>
     <a class="site-nav__home" href="#home" data-scroll-section="home" hidden>home</a>
     <a
       class="site-nav__instagram"
@@ -76,7 +76,8 @@
                 <div class="anon__stage">
                   <nav class="anon__list" aria-hidden="true">
                     <a class="anon__list-item" href="#info"       data-scroll-section="info"><span class="anon__list-name">Info</span></a>
-                    <a class="anon__list-item" href="#gallery"    data-scroll-section="gallery"><span class="anon__list-name">Gallery</span></a>
+                    <a class="anon__list-item" href="#paintings"  data-scroll-section="paintings"><span class="anon__list-name">Paintings</span></a>
+                    <a class="anon__list-item" href="#prints"     data-scroll-section="prints"><span class="anon__list-name">Prints</span></a>
                     <a class="anon__list-item" href="#maquettes"  data-scroll-section="maquettes"><span class="anon__list-name">Assamblage</span></a>
                     <a class="anon__list-item" href="#study"      data-scroll-section="study"><span class="anon__list-name">Study</span></a>
                     <a class="anon__list-item" href="#calendar"   data-scroll-section="calendar"><span class="anon__list-name">Calendar</span></a>
@@ -109,7 +110,8 @@
         <div class="anon__stage">
           <nav class="anon__list" id="anonNav" aria-label="Site">
             <a class="anon__list-item" href="#info"       data-scroll-section="info"><span class="anon__list-name">Info</span></a>
-            <a class="anon__list-item" href="#gallery"    data-scroll-section="gallery"><span class="anon__list-name">Gallery</span></a>
+            <a class="anon__list-item" href="#paintings"  data-scroll-section="paintings"><span class="anon__list-name">Paintings</span></a>
+            <a class="anon__list-item" href="#prints"     data-scroll-section="prints"><span class="anon__list-name">Prints</span></a>
             <a class="anon__list-item" href="#maquettes"  data-scroll-section="maquettes"><span class="anon__list-name">Assamblage</span></a>
             <a class="anon__list-item" href="#study"      data-scroll-section="study"><span class="anon__list-name">Study</span></a>
             <a class="anon__list-item" href="#calendar"   data-scroll-section="calendar"><span class="anon__list-name">Calendar</span></a>
@@ -245,8 +247,8 @@
       </main>
     </section>
 
-    <!-- GALLERY (standalone snap frame) -->
-    <section class="site-section" id="section-gallery" data-section="gallery" aria-label="Terence Ntsako Maluleke gallery">
+    <!-- PAINTINGS (standalone snap frame) -->
+    <section class="site-section" id="section-gallery" data-section="paintings" aria-label="Paintings">
       <div class="cross-bg" aria-hidden="true">
         <video
           id="galleryCrossVideo"
@@ -264,8 +266,32 @@
         </video>
       </div>
       <div class="cross-veil" aria-hidden="true"></div>
-      <main class="gallery-page" aria-label="Terence Ntsako Maluleke gallery">
+      <main class="gallery-page" aria-label="Paintings">
         <div class="gallery-grid" id="galleryGrid" role="list"></div>
+      </main>
+    </section>
+
+    <!-- PRINTS -->
+    <section class="site-section" id="section-prints" data-section="prints" aria-label="Prints">
+      <div class="cross-bg" aria-hidden="true">
+        <video
+          id="printsCrossVideo"
+          class="cross-video"
+          autoplay
+          muted
+          loop
+          playsinline
+          webkit-playsinline
+          disablepictureinpicture
+          preload="auto"
+        >
+          <source src="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" />
+          <source src="videos/info/archives/archive-1a0cc41b.mov" type="video/quicktime" />
+        </video>
+      </div>
+      <div class="cross-veil" aria-hidden="true"></div>
+      <main class="gallery-page" aria-label="Prints">
+        <div class="gallery-grid" id="printsGrid" role="list"></div>
       </main>
     </section>
 
@@ -357,12 +383,13 @@
   <script src="pages/info-init.js?v=20260830"></script>
   <script src="pages/sanity-config.js?v=20260609a"></script>
   <script src="pages/sanity-client.js?v=20260609a"></script>
-  <script src="pages/gallery-init.js?v=20260614b"></script>
+  <script src="pages/gallery-init.js?v=20260615c"></script>
   <script src="pages/info-gallery-transition.js?v=20260530m"></script>
   <script src="pages/shows-init.js?v=20260612"></script>
-  <script src="pages/study-init.js?v=20260809k"></script>
-  <script src="pages/maquettes-init.js?v=20260614g"></script>
+  <script src="pages/study-init.js?v=20260809l"></script>
+  <script src="pages/prints-init.js?v=20260615d"></script>
+  <script src="pages/maquettes-init.js?v=20260616b"></script>
   <script src="site-loader.js?v=20260827"></script>
-  <script src="site-scroll.js?v=20260809s"></script>
+  <script src="site-scroll.js?v=20260615a"></script>
 </body>
 </html>

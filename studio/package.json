@@ -1,0 +1,28 @@
+{
+  "name": "terence-maluleke-studio",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Terence Maluleke — Sanity CMS",
+  "scripts": {
+    "dev": "sanity dev",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "schema": "sanity schema deploy",
+    "seed": "sanity exec ./scripts/seed-content.mjs --with-user-token"
+  },
+  "keywords": [
+    "sanity"
+  ],
+  "dependencies": {
+    "@sanity/vision": "^5.30.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "sanity": "^5.30.0",
+    "styled-components": "^6.1.15"
+  },
+  "devDependencies": {
+    "@sanity/cli": "^7.1.0",
+    "@types/react": "^19.2.17",
+    "typescript": "^5.7.3"
+  }
+}
