@@ -1,5 +1,6 @@
 import { defineType, defineField } from "sanity";
 import { ImageIcon } from "@sanity/icons";
+import { orderRankField, orderRankOrdering } from "@sanity/orderable-document-list";
 
 export const studyImage = defineType({
   name: "studyImage",
@@ -7,6 +8,7 @@ export const studyImage = defineType({
   type: "document",
   icon: ImageIcon,
   fields: [
+    orderRankField({ type: "studyImage" }),
     defineField({
       name: "title",
       title: "Title (optional)",
@@ -24,20 +26,8 @@ export const studyImage = defineType({
       type: "image",
       options: { hotspot: true },
     }),
-    defineField({
-      name: "sortOrder",
-      title: "Sort order",
-      type: "number",
-      initialValue: 0,
-    }),
   ],
-  orderings: [
-    {
-      title: "Sort order",
-      name: "sortOrderAsc",
-      by: [{ field: "sortOrder", direction: "asc" }],
-    },
-  ],
+  orderings: [orderRankOrdering],
   preview: {
     select: {
       title: "title",

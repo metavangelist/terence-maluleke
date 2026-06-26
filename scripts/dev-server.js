@@ -38,7 +38,8 @@ function lanAddresses() {
 
     Object.values(ifaces || {}).forEach((entries) => {
       (entries || []).forEach((entry) => {
-        if (entry.family === 'IPv4' && !entry.internal) {
+        const isIPv4 = entry.family === 'IPv4' || entry.family === 4;
+        if (isIPv4 && !entry.internal) {
           out.push(entry.address);
         }
       });
@@ -100,6 +101,20 @@ const server = http.createServer((req, res) => {
   }
 
   if (pathname === '/') pathname = '/index.html';
+
+  if (!path.extname(pathname) && !pathname.endsWith('/')) {
+    const htmlPath = safePath(ROOT, `${pathname}.html`);
+    if (htmlPath) {
+      try {
+        if (fs.existsSync(htmlPath) && fs.statSync(htmlPath).isFile()) {
+          sendFile(res, htmlPath);
+          return;
+        }
+      } catch (_) {
+        /* fall through */
+      }
+    }
+  }
 
   const filePath = safePath(ROOT, pathname);
   if (!filePath) {

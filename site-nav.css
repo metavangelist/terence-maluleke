@@ -5,7 +5,8 @@
   right: 0;
   z-index: 50;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "contact center instagram";
   align-items: center;
   gap: 12px;
   padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
@@ -41,7 +42,47 @@
 }
 
 .site-nav__contact {
+  grid-area: contact;
   justify-self: start;
+}
+
+.site-nav__center {
+  grid-area: center;
+  position: relative;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  pointer-events: none;
+}
+
+.site-nav__center:has(.site-nav__home[hidden]):has(.site-nav__section-title[hidden]) {
+  display: none;
+}
+
+.site-nav__center .site-nav__home {
+  pointer-events: auto;
+}
+
+.site-nav__section-title {
+  position: absolute;
+  bottom: calc(100% - 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink, #1a1a1a);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.site-nav__section-title[hidden] {
+  display: none;
 }
 
 .site-nav__home {
@@ -53,12 +94,14 @@
 }
 
 .site-nav__instagram {
+  grid-area: instagram;
   justify-self: end;
 }
 
 .site-nav--inverse .site-nav__contact,
 .site-nav--inverse .site-nav__home,
-.site-nav--inverse .site-nav__instagram {
+.site-nav--inverse .site-nav__instagram,
+.site-nav--inverse .site-nav__section-title {
   color: #ffffff;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
@@ -88,6 +131,7 @@
   justify-self: start;
 }
 
+.gallery-topbar .site-nav--embedded .site-nav__center,
 .gallery-topbar .site-nav--embedded .site-nav__home {
   justify-self: center;
 }

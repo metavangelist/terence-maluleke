@@ -142,13 +142,52 @@ function initInfoStars() {
   });
 }
 
-function buildInfoBio() {
-  const bio = document.getElementById("infoBio");
+function getDefaultBioText() {
   const source = document.getElementById("bioTextSource");
+  if (!source) return "";
+  return source.textContent.replace(/\s+/g, " ").trim();
+}
 
-  if (!bio || !source) return;
+function portableTextHasContent(blocks) {
+  if (!Array.isArray(blocks) || !blocks.length) return false;
+  return blocks.some((block) =>
+    block.children?.some(
+      (child) => typeof child.text === "string" && child.text.trim().length > 0
+    )
+  );
+}
 
-  bio.textContent = source.textContent.replace(/\s+/g, " ").trim();
+function portableTextToPlain(blocks) {
+  if (!portableTextHasContent(blocks)) return "";
+  return blocks
+    .filter((block) => block._type === "block")
+    .map((block) => (block.children || []).map((child) => child.text || "").join(""))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveBioText(cmsData) {
+  const fromPortable = portableTextToPlain(cmsData?.bio);
+  if (fromPortable) return fromPortable;
+  return getDefaultBioText();
+}
+
+async function buildInfoBio() {
+  const bio = document.getElementById("infoBio");
+  if (!bio) return;
+
+  bio.textContent = getDefaultBioText();
+
+  const client = window.sanityClient;
+  if (!client?.fetchArtistBio) return;
+
+  try {
+    const data = await client.fetchArtistBio();
+    bio.textContent = resolveBioText(data);
+  } catch {
+    /* keep default bio */
+  }
 }
 
 function initCubeRotation() {

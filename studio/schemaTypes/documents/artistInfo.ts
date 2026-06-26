@@ -1,5 +1,6 @@
 import { defineType, defineField } from "sanity";
 import { UserIcon } from "@sanity/icons";
+import { DEFAULT_ARTIST_BIO } from "../../lib/defaultArtistBio";
 
 export const artistInfo = defineType({
   name: "artistInfo",
@@ -12,13 +13,7 @@ export const artistInfo = defineType({
       title: "Biography",
       type: "array",
       of: [{ type: "block" }],
-    }),
-    defineField({
-      name: "bioPlain",
-      title: "Biography (plain text fallback)",
-      type: "text",
-      rows: 8,
-      description: "Used by the static site if Portable Text is not wired yet.",
+      description: `Custom bio for the Info section. Leave empty and publish to restore the default:\n\n${DEFAULT_ARTIST_BIO}`,
     }),
   ],
   preview: {

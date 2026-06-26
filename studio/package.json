@@ -13,10 +13,13 @@
   "keywords": [
     "sanity"
   ],
-  "dependencies": {
+    "dependencies": {
+    "@sanity/image-url": "^2.1.1",
+    "@sanity/orderable-document-list": "^2.0.4",
     "@sanity/vision": "^5.30.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "lexorank": "^1.0.5",
     "sanity": "^5.30.0",
     "styled-components": "^6.1.15"
   },

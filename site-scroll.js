@@ -196,11 +196,20 @@
           route.slug === "info" ||
           route.slug === "study" ||
           route.slug === "paintings" ||
-          route.slug === "prints"
+          route.slug === "prints" ||
+          route.slug === "maquettes"
       );
       nav.classList.toggle("site-nav--with-home", pastHome);
 
       const homeEl = nav.querySelector(".site-nav__home");
+      const titleEl = nav.querySelector(".site-nav__section-title");
+
+      if (titleEl) {
+        const showTitle = pastHome;
+        titleEl.textContent = showTitle ? route.title || "" : "";
+        titleEl.hidden = !showTitle;
+        titleEl.setAttribute("aria-hidden", showTitle ? "false" : "true");
+      }
 
       if (homeEl && !homeEl.hasAttribute("data-gallery-exit")) {
         homeEl.hidden = !pastHome;
@@ -297,15 +306,6 @@
       window.playStudyVideo();
     } else if (typeof window.pauseStudyVideo === "function") {
       window.pauseStudyVideo();
-    }
-
-    if (route.slug === "paintings" && typeof window.playGalleryCrossVideo === "function") {
-      window.playGalleryCrossVideo();
-    } else if (route.slug === "prints" && typeof window.playPrintsCrossVideo === "function") {
-      window.playPrintsCrossVideo();
-    } else {
-      if (typeof window.pauseGalleryCrossVideo === "function") window.pauseGalleryCrossVideo();
-      if (typeof window.pausePrintsCrossVideo === "function") window.pausePrintsCrossVideo();
     }
 
     if (route.slug === "paintings") {
@@ -475,44 +475,52 @@
 
   function watchActiveSection() {
     const scroller = getScroller();
-    if (!scroller || !("IntersectionObserver" in window)) return;
+    if (!scroller) return;
 
-    const sections = SECTION_ORDER.map((id) => document.getElementById(id)).filter(Boolean);
-    if (!sections.length) return;
+    let scrollSyncTimer = 0;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
+    function syncActiveSectionFromScroll() {
+      if (scrollingProgrammatically || sectionTransitionLock) return;
+
+      const viewportMid = scroller.scrollTop + scroller.clientHeight * 0.5;
+      let bestSection = null;
+      let bestDistance = Infinity;
+
+      SECTION_ORDER.forEach((id) => {
+        const section = document.getElementById(id);
+        if (!section) return;
+
+        const top = sectionScrollTop(section);
+        const mid = top + section.offsetHeight * 0.5;
+        const distance = Math.abs(viewportMid - mid);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestSection = section;
+        }
+      });
+
+      if (!bestSection) return;
+
+      const slug = SLUG_BY_SECTION[bestSection.id];
+      if (!slug || slug === activeSlug) return;
+
+      setActiveSection(slug, {
+        updateHash: true,
+        replaceHash: true,
+        resetScroll: false,
+      });
+    }
+
+    scroller.addEventListener(
+      "scroll",
+      () => {
         if (scrollingProgrammatically || sectionTransitionLock) return;
-
-        let best = null;
-
-        entries.forEach((entry) => {
-          if (
-            entry.isIntersecting &&
-            (!best || entry.intersectionRatio > best.intersectionRatio)
-          ) {
-            best = entry;
-          }
-        });
-
-        if (!best) return;
-
-        const slug = SLUG_BY_SECTION[best.target.id];
-        if (!slug || slug === activeSlug) return;
-
-        setActiveSection(slug, {
-          updateHash: true,
-          replaceHash: true,
-          resetScroll: false,
-        });
+        window.clearTimeout(scrollSyncTimer);
+        scrollSyncTimer = window.setTimeout(syncActiveSectionFromScroll, 140);
       },
-      {
-        root: scroller,
-        threshold: [0.35, 0.55, 0.75],
-      }
+      { passive: true }
     );
-
-    sections.forEach((section) => observer.observe(section));
   }
 
   function init() {

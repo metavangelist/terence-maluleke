@@ -7,6 +7,9 @@
     "dev:local": "HOST=127.0.0.1 node scripts/dev-server.js",
     "dev:python": "python3 -m http.server 5501 --bind 0.0.0.0"
   },
+  "dependencies": {
+    "@google-analytics/data": "^4.12.0"
+  },
   "devDependencies": {
     "http-server": "^14.1.1",
     "vercel": "^54.6.1"

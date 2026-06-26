@@ -1,5 +1,15 @@
 import { defineField } from "sanity";
 
+function hasUploadedImage(value: unknown) {
+  if (!value || typeof value !== "object") return false;
+  const asset = (value as { asset?: { _ref?: string } }).asset;
+  return Boolean(asset?._ref);
+}
+
+function hasLegacyFilename(value: unknown) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export const artworkFields = [
   defineField({
     name: "title",
@@ -21,7 +31,29 @@ export const artworkFields = [
     type: "image",
     group: "media",
     options: { hotspot: true },
-    validation: (rule) => rule.required(),
+    description:
+      "Upload the artwork image. Imported items can use their legacy filename until you upload here.",
+    validation: (rule) =>
+      rule.custom(async (image, context) => {
+        const doc = context.document as { _id?: string; legacyFilename?: string } | undefined;
+        if (hasUploadedImage(image) || hasLegacyFilename(doc?.legacyFilename)) {
+          return true;
+        }
+
+        const publishedId = doc?._id?.replace(/^drafts\./, "");
+        if (publishedId && context.getClient) {
+          try {
+            const publishedLegacy = await context
+              .getClient({ apiVersion: "2025-06-27" })
+              .fetch<string | null>(`*[_id == $id][0].legacyFilename`, { id: publishedId });
+            if (hasLegacyFilename(publishedLegacy)) return true;
+          } catch {
+            // Fall through to the message below.
+          }
+        }
+
+        return "Upload an image (or keep the legacy filename from import).";
+      }),
   }),
   defineField({
     name: "year",
@@ -57,12 +89,53 @@ export const artworkFields = [
     initialValue: false,
   }),
   defineField({
-    name: "sortOrder",
-    title: "Sort order",
-    type: "number",
+    name: "presentationStyle",
+    title: "Presentation style",
+    type: "string",
     group: "display",
-    description: "Lower numbers appear first (0 = top of gallery).",
-    initialValue: 0,
+    options: {
+      list: [
+        { title: "Single image", value: "single" },
+        { title: "Stacked pair (one slot, top + bottom)", value: "stackedPair" },
+      ],
+      layout: "radio",
+    },
+    initialValue: "single",
+      description:
+        "Stacked pairs share one tall grid slot (top + bottom). Use a bottom panel image on this document, or link a partner artwork (the partner is hidden from the gallery list).",
+  }),
+  defineField({
+    name: "secondImage",
+    title: "Bottom panel image",
+    type: "image",
+    group: "display",
+    options: { hotspot: true },
+    hidden: ({ parent }) => parent?.presentationStyle !== "stackedPair",
+    description: "Shown below the main image in the same grid slot.",
+  }),
+  defineField({
+    name: "pairedArtwork",
+    title: "Linked bottom artwork (optional)",
+    type: "reference",
+    group: "display",
+    to: [{ type: "artwork" }],
+    hidden: ({ parent }) => parent?.presentationStyle !== "stackedPair",
+    description:
+      "Use instead of a bottom image when the second panel is its own artwork document. That linked artwork is hidden from the gallery list and moves with this one.",
+  }),
+  defineField({
+    name: "pairRole",
+    title: "Pair role",
+    type: "string",
+    group: "display",
+    options: {
+      list: [
+        { title: "Primary (shown in gallery list)", value: "primary" },
+        { title: "Secondary (hidden, moves with primary)", value: "secondary" },
+      ],
+    },
+    readOnly: true,
+    hidden: ({ document }) => document?.pairRole !== "secondary",
   }),
   defineField({
     name: "legacyFilename",

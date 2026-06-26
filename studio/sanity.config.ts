@@ -1,15 +1,28 @@
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
 import { visionTool } from "@sanity/vision";
+import { analyticsPlugin } from "./plugins/analytics";
 import { schemaTypes } from "./schemaTypes";
 import { structure } from "./structure";
+
+const analyticsApiUrl =
+  process.env.SANITY_STUDIO_ANALYTICS_API_URL ||
+  "https://terence-maluleke-v2.vercel.app/api/analytics";
+const analyticsApiSecret = process.env.SANITY_STUDIO_ANALYTICS_API_SECRET || "";
 
 export default defineConfig({
   name: "terence-art",
   title: "Terence Maluleke",
   projectId: "um9my25h",
   dataset: "production",
-  plugins: [structureTool({ structure }), visionTool()],
+  plugins: [
+    structureTool({ structure }),
+    visionTool(),
+    analyticsPlugin({
+      apiUrl: analyticsApiUrl,
+      apiSecret: analyticsApiSecret,
+    }),
+  ],
   schema: {
     types: schemaTypes,
   },

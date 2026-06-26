@@ -159,8 +159,6 @@ async function seed() {
   tx.createOrReplace({
     _id: "artistInfo",
     _type: "artistInfo",
-    bioPlain:
-      "Terence Ntsako Maluleke is a digital artist and painter. Born in Soweto, South Africa, Maluleke draws inspiration from the township community he grew up in.",
   });
 
   console.log(`Seeding ${GALLERY_FILES.length} gallery artworks…`);
@@ -182,7 +180,6 @@ async function seed() {
       dimensions: work?.dimensions || "",
       sold: Boolean(work?.sold),
       legacyFilename: file,
-      sortOrder: index,
       ...(image ? { image } : {}),
     });
   }
@@ -204,7 +201,6 @@ async function seed() {
       price: item.price || "",
       sold: Boolean(item.sold),
       legacyFilename: item.file,
-      sortOrder: index,
       ...(image ? { image } : {}),
     });
   }
@@ -219,7 +215,6 @@ async function seed() {
       _id: `study-${slug}`,
       _type: "studyImage",
       legacyFilename: file,
-      sortOrder: index,
       ...(image ? { image } : {}),
     });
   }

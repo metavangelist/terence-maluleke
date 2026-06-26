@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#f0f2f5" />
   <title>Terence Ntsako Maluleke</title>
+  <meta
+    name="description"
+    content="Explore the paintings, prints, and assemblage works of artist Terence Ntsako Maluleke. Browse the portfolio and check upcoming exhibitions and shows."
+  />
+  <meta property="og:title" content="Terence Ntsako Maluleke" />
+  <meta
+    property="og:description"
+    content="Explore the paintings, prints, and assemblage works of artist Terence Ntsako Maluleke. Browse the portfolio and check upcoming exhibitions and shows."
+  />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Terence Ntsako Maluleke" />
+  <meta
+    name="twitter:description"
+    content="Explore the paintings, prints, and assemblage works of artist Terence Ntsako Maluleke. Browse the portfolio and check upcoming exhibitions and shows."
+  />
   <link rel="preload" as="video" href="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" fetchpriority="high" />
   <link rel="preload" as="video" href="videos/info/archives/archive-621e3fef.mp4" type="video/mp4" fetchpriority="high" />
   <link rel="preload" as="video" href="videos/info/archives/archive-fathers-graduation-party.mp4" type="video/mp4" fetchpriority="high" />
@@ -12,16 +28,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&family=Pinyon+Script&family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260753" />
-  <link rel="stylesheet" href="mobile.css?v=20260530" />
-  <link rel="stylesheet" href="site-nav.css?v=20260678" />
+  <link rel="stylesheet" href="styles.css?v=20260679" />
+  <link rel="stylesheet" href="mobile.css?v=20260617v1" />
+  <link rel="stylesheet" href="site-nav.css?v=20260628c" />
   <link rel="stylesheet" href="pages/info.css?v=20260607" />
-  <link rel="stylesheet" href="pages/gallery.css?v=20260615h" />
+  <link rel="stylesheet" href="pages/gallery.css?v=20260628a" />
   <link rel="stylesheet" href="pages/info-gallery-transition.css?v=20260530m" />
-  <link rel="stylesheet" href="site-scroll.css?v=20260809s" />
+  <link rel="stylesheet" href="site-scroll.css?v=20260628b" />
   <link rel="stylesheet" href="pages/shows.css?v=20260631" />
-  <link rel="stylesheet" href="pages/study.css?v=20260809m" />
+  <link rel="stylesheet" href="pages/study.css?v=20260628d" />
   <link rel="stylesheet" href="site-loader.css?v=20260678" />
+  <link rel="stylesheet" href="image-protection.css?v=20260617b" />
 </head>
 <body class="site-scroll home-anon is-loading">
   <div id="siteLoader" class="site-loader" aria-live="polite" aria-busy="true">
@@ -32,7 +49,10 @@
   </div>
   <nav class="site-nav" id="siteNav" aria-label="Site links">
     <a class="site-nav__contact" href="mailto:Contact@maluleke.art">contact</a>
-    <a class="site-nav__home" href="#home" data-scroll-section="home" hidden>home</a>
+    <div class="site-nav__center">
+      <span class="site-nav__section-title" id="siteNavSectionTitle" hidden aria-hidden="true"></span>
+      <a class="site-nav__home" href="#home" data-scroll-section="home" hidden>home</a>
+    </div>
     <a
       class="site-nav__instagram"
       href="https://www.instagram.com/terencentsako/"
@@ -40,6 +60,23 @@
       rel="noopener noreferrer"
     >instagram</a>
   </nav>
+  <div id="galleryClusterBg" class="gallery-cluster-bg" aria-hidden="true">
+    <video
+      id="galleryClusterVideo"
+      class="cross-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      webkit-playsinline
+      disablepictureinpicture
+      preload="auto"
+    >
+      <source src="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" />
+      <source src="videos/info/archives/archive-1a0cc41b.mov" type="video/quicktime" />
+    </video>
+    <div class="cross-veil" aria-hidden="true"></div>
+  </div>
   <div id="siteScroller" class="site-scroller">
   <div class="site-scroll__main">
 
@@ -249,23 +286,6 @@
 
     <!-- PAINTINGS (standalone snap frame) -->
     <section class="site-section" id="section-gallery" data-section="paintings" aria-label="Paintings">
-      <div class="cross-bg" aria-hidden="true">
-        <video
-          id="galleryCrossVideo"
-          class="cross-video"
-          autoplay
-          muted
-          loop
-          playsinline
-          webkit-playsinline
-          disablepictureinpicture
-          preload="auto"
-        >
-          <source src="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" />
-          <source src="videos/info/archives/archive-1a0cc41b.mov" type="video/quicktime" />
-        </video>
-      </div>
-      <div class="cross-veil" aria-hidden="true"></div>
       <main class="gallery-page" aria-label="Paintings">
         <div class="gallery-grid" id="galleryGrid" role="list"></div>
       </main>
@@ -273,23 +293,6 @@
 
     <!-- PRINTS -->
     <section class="site-section" id="section-prints" data-section="prints" aria-label="Prints">
-      <div class="cross-bg" aria-hidden="true">
-        <video
-          id="printsCrossVideo"
-          class="cross-video"
-          autoplay
-          muted
-          loop
-          playsinline
-          webkit-playsinline
-          disablepictureinpicture
-          preload="auto"
-        >
-          <source src="videos/info/archives/archive-1a0cc41b.mp4" type="video/mp4" />
-          <source src="videos/info/archives/archive-1a0cc41b.mov" type="video/quicktime" />
-        </video>
-      </div>
-      <div class="cross-veil" aria-hidden="true"></div>
       <main class="gallery-page" aria-label="Prints">
         <div class="gallery-grid" id="printsGrid" role="list"></div>
       </main>
@@ -380,16 +383,20 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="home-bubble.js?v=20260635"></script>
   <script src="pages/home-init.js"></script>
-  <script src="pages/info-init.js?v=20260830"></script>
-  <script src="pages/sanity-config.js?v=20260609a"></script>
-  <script src="pages/sanity-client.js?v=20260609a"></script>
-  <script src="pages/gallery-init.js?v=20260615c"></script>
+  <script src="pages/gallery-pair-utils.js?v=20260625c"></script>
+  <script src="shared/gallery-grid-layout.js?v=20260626c"></script>
+  <script src="pages/sanity-config.js?v=20260625d"></script>
+  <script src="pages/sanity-client.js?v=20260626d"></script>
+  <script src="pages/info-init.js?v=20260623a"></script>
+  <script src="pages/analytics-init.js?v=20260617d"></script>
+  <script src="pages/gallery-init.js?v=20260628f"></script>
   <script src="pages/info-gallery-transition.js?v=20260530m"></script>
   <script src="pages/shows-init.js?v=20260612"></script>
-  <script src="pages/study-init.js?v=20260809l"></script>
-  <script src="pages/prints-init.js?v=20260615d"></script>
-  <script src="pages/maquettes-init.js?v=20260616b"></script>
+  <script src="pages/study-init.js?v=20260628d"></script>
+  <script src="pages/prints-init.js?v=20260628f"></script>
+  <script src="pages/maquettes-init.js?v=20260627c"></script>
   <script src="site-loader.js?v=20260827"></script>
-  <script src="site-scroll.js?v=20260615a"></script>
+  <script src="site-scroll.js?v=20260628d"></script>
+  <script src="image-protection.js?v=20260617b"></script>
 </body>
 </html>

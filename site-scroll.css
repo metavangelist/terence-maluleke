@@ -38,8 +38,8 @@ body.site-scroll.home-anon {
   overflow-x: hidden;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
-  background: var(--paper);
+  scroll-behavior: auto;
+  background: transparent;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
@@ -72,7 +72,7 @@ body.site-scroll.home-anon {
   z-index: 1;
   width: 100%;
   min-height: 100%;
-  background: var(--paper);
+  background: transparent;
   overflow: visible;
 }
 
@@ -124,7 +124,7 @@ body.site-scroll.home-anon {
   min-height: 100vh;
   min-height: 100dvh;
   overflow: hidden;
-  background: var(--paper);
+  background: transparent;
   box-sizing: border-box;
 }
 
@@ -139,8 +139,9 @@ body.site-scroll.home-anon {
   box-sizing: border-box;
 }
 
-/* Gallery & maquettes are flex so their children can anchor to a real height */
+/* Gallery cluster sections share one fixed cross-video behind the scroller */
 #section-gallery,
+#section-prints,
 #section-maquettes {
   width: 100%;
   height: 100vh;
@@ -150,14 +151,15 @@ body.site-scroll.home-anon {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  background: transparent;
 }
 
 #section-gallery {
-  background: #3a4248;
+  background: transparent;
 }
 
 #section-maquettes {
-  background: var(--paper, #f0f2f5);
+  background: transparent;
 }
 
 #section-home {

@@ -1,0 +1,29 @@
+/* Deter casual image saving — not a security boundary. */
+
+:is(
+    .site-section img,
+    .blob__painting img,
+    .gallery-rico__img,
+    .gallery-index__img,
+    .study-gallery__item img
+  ) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}
+
+:is(.gallery-rico__frame, .gallery-index__cell, .study-gallery__item, .blob__painting) {
+  position: relative;
+}
+
+:is(.gallery-rico__frame, .gallery-index__cell, .study-gallery__item, .blob__painting)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  pointer-events: none;
+}

@@ -27,7 +27,7 @@
 
 #section-gallery,
 #section-prints {
-  background: #3a4248;
+  background: transparent;
   --gr-glass-blur: 14px;
   --gr-glass-saturate: 1;
   --gr-glass-bg: rgba(28, 28, 28, 0.72);
@@ -35,7 +35,7 @@
 }
 
 #section-maquettes {
-  background: var(--paper, #f0f2f5);
+  background: transparent;
   --gr-glass-blur: 14px;
   --gr-glass-saturate: 1;
   --gr-glass-bg: rgba(28, 28, 28, 0.72);
@@ -286,11 +286,11 @@
 }
 
 :is(#section-maquettes) .gallery-rico--detail .gallery-rico__counter {
-  color: var(--gr-text-dim);
+  color: rgba(255, 255, 255, 0.58);
 }
 
 :is(#section-maquettes) .gallery-rico--detail .gallery-rico__title {
-  color: var(--gr-text);
+  color: #ffffff;
 }
 
 #section-gallery .gallery-rico--detail .gallery-rico__counter {
@@ -348,13 +348,29 @@
 }
 
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport {
-  width: auto;
-  height: auto;
+  position: relative;
+  width: min(100%, 720px);
+  height: min(62vh, 760px);
+  max-height: min(68vh, 820px);
+  min-height: min(42vh, 380px);
   flex-shrink: 0;
+  margin: 0 auto;
+  overflow: hidden;
 }
 
-/* JS sets explicit px width/height — never clamp against a stage that may still be settling. */
-:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__viewport.is-sized {
+/* Non-immersive detail: fixed CSS stage box — do not rely on JS px sizing. */
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail:not(.is-immersive) .gallery-rico__viewport:not(.is-sized),
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail:not(.is-immersive) .gallery-rico__viewport.is-sized {
+  width: min(100%, 720px);
+  height: min(62vh, 760px);
+  max-width: min(100%, 720px);
+  max-height: min(68vh, 820px);
+  min-height: min(42vh, 380px);
+  aspect-ratio: auto;
+}
+
+/* Immersive keeps JS-driven sizing. */
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__viewport.is-sized {
   max-width: none;
   max-height: none;
 }
@@ -781,13 +797,27 @@
   box-shadow: none;
 }
 
-:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__img {
-  display: block;
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail:not(.is-immersive) .gallery-rico__frame.is-active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  max-width: none;
-  max-height: none;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail:not(.is-immersive) .gallery-rico__frame:not(.is-active):not(.is-enter-from-right):not(.is-enter-from-left):not(.is-leave-to-left):not(.is-leave-to-right) {
+  display: none !important;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail:not(.is-immersive) .gallery-rico__img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 720px);
+  max-height: min(62vh, 760px);
+  margin: 0 auto;
   object-fit: contain;
+  object-position: center center;
 }
 
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico__viewport:focus,
@@ -839,11 +869,14 @@
 .gallery-rico__viewport {
   position: relative;
   width: 100%;
-  height: 100%;
   max-width: min(100%, 640px);
   margin: 0 auto;
   cursor: default;
   outline: none;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail:not(.is-immersive) .gallery-rico__viewport {
+  height: min(62vh, 760px);
 }
 
 .gallery-rico__frame {

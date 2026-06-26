@@ -25,6 +25,22 @@ export const siteSettings = defineType({
       title: "Instagram URL",
       type: "url",
     }),
+    defineField({
+      name: "ga4MeasurementId",
+      title: "GA4 measurement ID",
+      description: "Example: G-XXXXXXXXXX. Used by the public site for Google Analytics tracking.",
+      type: "string",
+      validation: (rule) =>
+        rule.custom((value) => {
+          if (!value) {
+            return true;
+          }
+
+          return /^G-[A-Z0-9]+$/.test(value)
+            ? true
+            : "Use a GA4 measurement ID like G-XXXXXXXXXX";
+        }),
+    }),
   ],
   preview: {
     prepare() {

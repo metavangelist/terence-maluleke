@@ -8,6 +8,8 @@ studio/dist/
 .restore/
 .vscode/
 .site-version
+.env
+studio/.env
 
 # Large local-only / deploy-excluded assets
 assets/Ali Fraizer.M4V

@@ -142,7 +142,8 @@ const GALLERY_NEIGHBOR_EDGE_HITS_REQUIRED = 1;
 const GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS = 200;
 const GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS = 120;
 const GALLERY_EXIT_ARM_DELAY_MS = GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS;
-let printsExitToMaquettesArmed = true;
+const PRINTS_GRID_EXIT_ARM_DELAY_MS = 480;
+let printsExitToMaquettesArmed = false;
 let galleryExitArmTimer = 0;
 let printsGridBottomWheelAccum = 0;
 let printsGridBottomWheelResetTimer = 0;
@@ -154,6 +155,7 @@ let scheduleGallerySync = null;
 let pillScrollSyncing = false;
 let galleryViewMode = "grid";
 let galleryImmersive = false;
+let galleryDetailFitIndex = -1;
 let printsIndexInitialized = false;
 let lastIndexPageCount = 0;
 let galleryHomeScrollSection = "home";
@@ -263,10 +265,16 @@ function isGalleryGridAtTop(scroller = getGalleryIndexScroller()) {
 
 function isGalleryGridAtBottom(scroller = getGalleryIndexScroller()) {
   if (!scroller || !isGalleryIndexScrollReady(scroller)) return false;
-  if (getGalleryGridPageIndex() < indexPageCount() - 1) return false;
 
-  const scrollHeight = getGalleryIndexScrollHeight(scroller);
-  return scroller.scrollTop + scroller.clientHeight >= scrollHeight - 2;
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  const lastPage = indexPageCount() - 1;
+  if (!pageHeight || lastPage < 0) return false;
+
+  const atLastSnap = scroller.scrollTop >= lastPage * pageHeight - 2;
+  const canScrollDown =
+    scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
+
+  return atLastSnap && !canScrollDown;
 }
 
 function isInfoHandoff(targetSlug) {
@@ -297,13 +305,18 @@ function markPrintsSectionEntered() {
   fixGalleryHeights();
   syncGalleryIndexPageHeights();
   ensurePrintsIndexScrollReadySoon();
-  galleryExitArmTimer = window.setTimeout(() => {
-    printsExitToMaquettesArmed = true;
-  }, GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS);
+  galleryLastGridPageSeen = -1;
 }
 
 function galleryEdgesArmed() {
   return galleryEdgesArmedFor("paintings");
+}
+
+function printsMaquettesHandoffReady() {
+  return (
+    printsExitToMaquettesArmed &&
+    Date.now() - gallerySectionEnteredAt >= PRINTS_GRID_EXIT_ARM_DELAY_MS
+  );
 }
 
 function getGalleryGridPageIndex() {
@@ -315,7 +328,7 @@ function getGalleryGridPageIndex() {
 
   return Math.min(
     indexPageCount() - 1,
-    Math.max(0, Math.round(scroller.scrollTop / pageHeight))
+    Math.max(0, Math.floor(scroller.scrollTop / pageHeight))
   );
 }
 
@@ -326,7 +339,7 @@ function disarmPrintsExitToMaquettes() {
   window.clearTimeout(galleryExitArmTimer);
   galleryExitArmTimer = window.setTimeout(() => {
     printsExitToMaquettesArmed = true;
-  }, GALLERY_EXIT_ARM_DELAY_MS);
+  }, PRINTS_GRID_EXIT_ARM_DELAY_MS);
 }
 
 function onGalleryGridPageChange() {
@@ -347,11 +360,14 @@ function onGalleryGridPageChange() {
 
   const page = getGalleryGridPageIndex();
   const lastPage = indexPageCount() - 1;
+  const atBottom = isGalleryGridAtBottom(scroller);
 
-  if (page === lastPage && galleryLastGridPageSeen !== lastPage) {
-    disarmPrintsExitToMaquettes();
-  } else if (page !== lastPage) {
-    printsExitToMaquettesArmed = true;
+  if (page === lastPage && atBottom) {
+    if (galleryLastGridPageSeen !== lastPage) {
+      disarmPrintsExitToMaquettes();
+    }
+  } else if (page < lastPage) {
+    printsExitToMaquettesArmed = false;
     window.clearTimeout(galleryExitArmTimer);
     printsGridBottomWheelAccum = 0;
   }
@@ -412,6 +428,12 @@ function itemPreviewSrc(item) {
 
 function itemViewSrc(item) {
   return item?.remoteViewSrc || viewSrc(item.file);
+}
+
+function sanitySizedImageUrl(url, width) {
+  if (!url || !String(url).includes("cdn.sanity.io/")) return url;
+  const base = String(url).split("?")[0];
+  return `${base}?w=${width}&auto=format&q=82`;
 }
 
 function originalSrc(file) {
@@ -546,7 +568,7 @@ function diptychStackMarkup(topItem, bottomItem, loading = "lazy") {
     <div class="gallery-rico__diptych">
       <img
         class="gallery-rico__img gallery-rico__img--diptych-top"
-        src="${topView}"
+        src="${topPreview}"
         data-preview-src="${topPreview}"
         data-view-src="${topView}"
         alt="${escapeHtml(topItem.title)} (top panel)"
@@ -556,7 +578,7 @@ function diptychStackMarkup(topItem, bottomItem, loading = "lazy") {
       />
       <img
         class="gallery-rico__img gallery-rico__img--diptych-bottom"
-        src="${bottomView}"
+        src="${bottomPreview}"
         data-preview-src="${bottomPreview}"
         data-view-src="${bottomView}"
         alt="${escapeHtml(bottomItem.title)} (bottom panel)"
@@ -592,7 +614,7 @@ function frameHtml(item, index, isActive) {
     <figure class="gallery-rico__frame${isActive ? " is-active" : ""}" data-art-index="${index}" aria-hidden="${isActive ? "false" : "true"}">
       <img
         class="gallery-rico__img"
-        src="${view}"
+        src="${isActive ? preview : ""}"
         data-preview-src="${preview}"
         data-view-src="${view}"
         alt="${escapeHtml(item.title)}"
@@ -697,11 +719,16 @@ function detailsPanelHtml() {
   `;
 }
 
+function gridLayoutApi() {
+  return window.galleryGridLayout || {};
+}
+
+function isMobileGrid() {
+  return typeof window !== "undefined" && window.innerWidth < 600;
+}
+
 function gridLayout() {
-  if (typeof window !== "undefined" && window.innerWidth < 600) {
-    return { cols: 2, rows: 2, perPage: 4 };
-  }
-  return { cols: 3, rows: 2, perPage: 6 };
+  return gridLayoutApi().gridLayout?.(isMobileGrid()) || { cols: 3, rows: 2, perPage: 6 };
 }
 
 function buildGridEntries() {
@@ -729,56 +756,24 @@ function buildGridEntries() {
   return entries;
 }
 
-function firstGridPageEntries(entries, mobile) {
-  const byTitle = (title) =>
-    entries.find((entry) => entry.kind === "single" && entry.item?.title === title);
-  const diptych = entries.find((entry) => entry.kind === "diptych");
-
-  if (mobile) {
-    return [byTitle("Towards Glory"), byTitle("Before Glory"), diptych].filter(Boolean);
+function getPackedGridPages() {
+  const mobile = isMobileGrid();
+  const entries = buildGridEntries();
+  const pack = gridLayoutApi().packGalleryPages;
+  if (!pack) {
+    return [entries.map((entry) => ({ entry, placement: null }))];
   }
-
-  return [
-    byTitle("Towards Glory"),
-    byTitle("Before Glory"),
-    diptych,
-    byTitle("Crimson Accord"),
-    byTitle("Anima"),
-  ].filter(Boolean);
+  return pack(entries, { mobile });
 }
 
 function getGridPages() {
-  const { perPage } = gridLayout();
-  const mobile = perPage === 4;
-  const entries = buildGridEntries();
-  const page0 = firstGridPageEntries(entries, mobile);
-  const used = new Set(page0);
-  const rest = entries.filter((entry) => !used.has(entry));
-  const pages = [page0];
-
-  for (let offset = 0; offset < rest.length; offset += perPage) {
-    pages.push(rest.slice(offset, offset + perPage));
-  }
-
-  const nonEmpty = pages.filter((page) => page.length > 0);
-  return nonEmpty.length ? nonEmpty : [[]];
+  const toEntries = gridLayoutApi().pagesToEntries;
+  if (toEntries) return toEntries(getPackedGridPages());
+  return getPackedGridPages();
 }
 
 function indexPageCount() {
-  return getGridPages().length;
-}
-
-function page0Placement(slotIndex, mobile) {
-  if (mobile) {
-    return [{ col: 1, row: 1 }, { col: 1, row: 2 }, null][slotIndex] ?? null;
-  }
-  return [
-    { col: 1, row: 1 },
-    { col: 2, row: 1 },
-    null,
-    { col: 1, row: 2 },
-    { col: 2, row: 2 },
-  ][slotIndex] ?? null;
+  return getPackedGridPages().length;
 }
 
 function catalogPageForIndex(index) {
@@ -816,7 +811,7 @@ function buildIndexCellMarkup(item, index, placement = null) {
   `;
 }
 
-function buildDiptychCellMarkup(entry, mobile) {
+function buildDiptychCellMarkup(entry, placement) {
   const [topIdx, bottomIdx] = entry.indices;
   const topItem = catalog[topIdx];
   const bottomItem = catalog[bottomIdx];
@@ -824,7 +819,10 @@ function buildDiptychCellMarkup(entry, mobile) {
   const bottomPreview = itemPreviewSrc(bottomItem);
   const topView = itemViewSrc(topItem);
   const bottomView = itemViewSrc(bottomItem);
-  const diptychCol = mobile ? 2 : 3;
+  const col = placement?.col ?? 3;
+  const row = placement?.row ?? 1;
+  const rowSpan = placement?.rowSpan ?? 2;
+  const gridStyle = ` style="--diptych-col: ${col}; grid-column: ${col}; grid-row: ${row} / span ${rowSpan};"`;
 
   return `
     <button
@@ -832,7 +830,7 @@ function buildDiptychCellMarkup(entry, mobile) {
       class="gallery-index__cell gallery-index__cell--diptych"
       data-art-index="${topIdx}"
       data-diptych="true"
-      style="--diptych-col: ${diptychCol}; grid-column: var(--diptych-col); grid-row: 1 / span 2;"
+      ${gridStyle}
       aria-label="View ${escapeHtml(topItem.title)}"
     >
       <div class="gallery-index__diptych">
@@ -861,21 +859,18 @@ function buildDiptychCellMarkup(entry, mobile) {
   `;
 }
 
-function buildGridCellMarkup(entry, slotIndex, page) {
-  const mobile = gridLayout().perPage === 4;
-  if (entry.kind === "diptych") return buildDiptychCellMarkup(entry, mobile);
-  const placement = page === 0 ? page0Placement(slotIndex, mobile) : null;
+function buildPlacedCellMarkup(placed) {
+  const { entry, placement } = placed;
+  if (entry.kind === "diptych") return buildDiptychCellMarkup(entry, placement);
   return buildIndexCellMarkup(entry.item, entry.catalogIndex, placement);
 }
 
 function buildIndexMarkup() {
   const { cols, rows } = gridLayout();
-  const pages = getGridPages();
+  const pages = getPackedGridPages();
   const pagesHtml = pages
-    .map((entries, page) => {
-      const cells = entries
-        .map((entry, slotIndex) => buildGridCellMarkup(entry, slotIndex, page))
-        .join("");
+    .map((placedPage, page) => {
+      const cells = placedPage.map((placed) => buildPlacedCellMarkup(placed)).join("");
 
       return `
       <div class="gallery-index__page" data-page="${page}" style="--gi-cols: ${cols}; --gi-rows: ${rows}">
@@ -974,6 +969,7 @@ function showGalleryGrid(options = {}) {
   collapseGalleryCoa();
   setGalleryImmersive(false);
   galleryViewMode = "grid";
+  galleryDetailFitIndex = -1;
   galleryNavQueue = 0;
   galleryPageAnimating = false;
   galleryLockedSquareSize = null;
@@ -1007,6 +1003,23 @@ function openGalleryDetail(index) {
   setGalleryNavExitMode(true);
   window.printsGoToIndex?.(index, false);
   if (index >= catalog.length - 1) disarmPrintsExitToMaquettes();
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      activateDetailFrameImage(index);
+      if (galleryImmersive) {
+        const img = document
+          .getElementById("printsRicoStage")
+          ?.querySelector(`.gallery-rico__frame[data-art-index="${index}"] img`);
+        scheduleFitGalleryViewport(img?.dataset?.viewSrc);
+      }
+    });
+  });
+
+  const item = catalog[index];
+  if (item && typeof window.trackArtworkView === "function") {
+    window.trackArtworkView("prints", item.title);
+  }
 }
 
 function setGalleryDetail(id, value) {
@@ -1035,6 +1048,10 @@ function updateGalleryDisplay(index, options = {}) {
 
   syncEnquiryLinks(item, "Prints");
 
+  if (galleryViewMode === "detail" && typeof window.trackArtworkView === "function") {
+    window.trackArtworkView("prints", item.title);
+  }
+
   const prevBtn = document.getElementById("printsRicoPrev");
   const nextBtn = document.getElementById("printsRicoNext");
   if (prevBtn) {
@@ -1046,24 +1063,36 @@ function updateGalleryDisplay(index, options = {}) {
   }
   if (nextBtn) nextBtn.disabled = index >= catalog.length - 1;
 
-  if (options.skipFit) return;
+  if (options.skipFit || galleryViewMode !== "detail") return;
 
-  const viewport = document.getElementById("printsRicoViewport");
   const stage = document.getElementById("printsRicoStage");
   const frame = stage?.querySelector(`.gallery-rico__frame[data-art-index="${index}"]`);
-  const { img } = promoteDetailImage(index);
-  if (!frame || !img) return;
+  if (!frame) return;
 
-  if (!viewportNeedsRefit(viewport, frame)) return;
+  resetGalleryViewportSize();
+  galleryDetailFitIndex = index;
+
+  const img = activateDetailFrameImage(index);
+  if (!img) return;
 
   if (galleryImmersive) {
     setGalleryImmersiveFitPending(true);
+    scheduleFitGalleryViewport(img.dataset.viewSrc);
+    return;
   }
 
-  if (viewport?.classList.contains("is-sized")) {
-    resetGalleryViewportSize();
+  const commitWhenReady = () => {
+    if (galleryViewMode !== "detail" || galleryDetailFitIndex !== index) return;
+    if (galleryImmersive) scheduleFitGalleryViewport(img.dataset.viewSrc);
+  };
+
+  if (img.complete && img.naturalWidth > 0 && imageSrcMatches(img, img.dataset.viewSrc)) {
+    commitWhenReady();
+    return;
   }
-  scheduleFitGalleryViewport(img.dataset.viewSrc);
+
+  img.addEventListener("load", commitWhenReady, { once: true });
+  img.addEventListener("error", commitWhenReady, { once: true });
 }
 
 function initPrintsPageNav() {
@@ -1083,11 +1112,15 @@ function initPrintsPageNav() {
       galleryNavQueue = 0;
       return;
     }
-    if (galleryPageAnimating || !printsExitToMaquettesArmed) {
+    if (galleryPageAnimating || !printsMaquettesHandoffReady()) {
       galleryNavQueue = 0;
       return;
     }
     if (galleryViewMode === "grid" && !isGalleryIndexScrollReady()) {
+      galleryNavQueue = 0;
+      return;
+    }
+    if (galleryViewMode === "grid" && !isGalleryGridAtBottom()) {
       galleryNavQueue = 0;
       return;
     }
@@ -1096,7 +1129,7 @@ function initPrintsPageNav() {
     galleryPageAnimating = false;
     window.clearTimeout(animTimer);
     galleryEdgeHandoff = true;
-    window.siteScroll?.scrollToNextSection?.({ resetScroll: false });
+    window.siteScroll?.scrollToSection?.("maquettes", { resetScroll: false });
     window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
   }
 
@@ -1122,13 +1155,14 @@ function initPrintsPageNav() {
   function finishStep(next) {
     if (!galleryPageAnimating) return;
     window.clearTimeout(animTimer);
-    const frames = [...stage.querySelectorAll(".gallery-rico__frame")];
-    frames.forEach((frame, i) => {
+    stage.querySelectorAll(".gallery-rico__frame").forEach((frame) => {
+      const frameIndex = Number(frame.dataset.artIndex);
       clearFrameAnimClasses(frame);
-      frame.classList.toggle("is-active", i === next);
-      frame.setAttribute("aria-hidden", i === next ? "false" : "true");
+      frame.classList.toggle("is-active", frameIndex === next);
+      frame.setAttribute("aria-hidden", frameIndex === next ? "false" : "true");
     });
     galleryPageAnimating = false;
+    activateDetailFrameImage(next);
     if (next >= catalog.length - 1) {
       // Spillover from fast scrolling was meant to reach the last slide, not exit.
       galleryNavQueue = 0;
@@ -1144,9 +1178,10 @@ function initPrintsPageNav() {
   }
 
   function performStep(next) {
-    const frames = [...stage.querySelectorAll(".gallery-rico__frame")];
-    const currentFrame = frames[currentGalleryIndex];
-    const nextFrame = frames[next];
+    const currentFrame = stage.querySelector(
+      `.gallery-rico__frame[data-art-index="${currentGalleryIndex}"]`
+    );
+    const nextFrame = stage.querySelector(`.gallery-rico__frame[data-art-index="${next}"]`);
     if (!currentFrame || !nextFrame) {
       galleryPageAnimating = false;
       processNavQueue();
@@ -1237,11 +1272,11 @@ function initPrintsPageNav() {
       galleryPageAnimating = false;
       window.clearTimeout(animTimer);
 
-      const frames = [...stage.querySelectorAll(".gallery-rico__frame")];
-      frames.forEach((frame, i) => {
+      stage.querySelectorAll(".gallery-rico__frame").forEach((frame) => {
+        const frameIndex = Number(frame.dataset.artIndex);
         clearFrameAnimClasses(frame);
-        frame.classList.toggle("is-active", i === next);
-        frame.setAttribute("aria-hidden", i === next ? "false" : "true");
+        frame.classList.toggle("is-active", frameIndex === next);
+        frame.setAttribute("aria-hidden", frameIndex === next ? "false" : "true");
       });
       currentGalleryIndex = next;
       collapseGalleryCoa();
@@ -1291,7 +1326,7 @@ function initPrintsPageNav() {
     const atLastSlide = currentGalleryIndex >= catalog.length - 1;
 
     if (atLastSlide && delta > 0) {
-      if (!printsExitToMaquettesArmed) {
+      if (!printsMaquettesHandoffReady()) {
         wheelAccum = 0;
         return;
       }
@@ -1421,8 +1456,13 @@ function initPrintsIndexNav() {
 
   function doGridHandoff(targetSlug) {
     if (!isGalleryIndexScrollReady()) return;
-    if (targetSlug === "maquettes" && !printsExitToMaquettesArmed) return;
+    if (targetSlug === "maquettes" && !printsMaquettesHandoffReady()) return;
+    if (targetSlug === "maquettes" && !isGalleryGridAtBottom(scroller)) return;
     prepSectionHandoff(targetSlug);
+    if (targetSlug === "maquettes") {
+      syncGalleryIndexPageHeights();
+      clampGalleryIndexScroll(scroller);
+    }
     galleryEdgeHandoff = true;
     window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
     window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
@@ -1476,20 +1516,34 @@ function initPrintsIndexNav() {
       }
 
       if (atBottom && event.deltaY > 0) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (!printsExitToMaquettesArmed) {
+        if (!printsMaquettesHandoffReady()) {
           printsGridBottomWheelAccum = 0;
+          if (!galleryEdgesArmedFor("maquettes")) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
           return;
         }
 
+        event.preventDefault();
+        event.stopPropagation();
+
         if (!galleryEdgesArmedFor("maquettes")) return;
+
+        printsGridBottomWheelAccum += event.deltaY;
+        window.clearTimeout(printsGridBottomWheelResetTimer);
+        printsGridBottomWheelResetTimer = window.setTimeout(() => {
+          printsGridBottomWheelAccum = 0;
+        }, 150);
+
+        if (printsGridBottomWheelAccum < GALLERY_WHEEL_THRESHOLD) return;
 
         printsGridBottomWheelAccum = 0;
         doGridHandoff("maquettes");
         return;
       }
+
+      event.stopPropagation();
     },
     { passive: false }
   );
@@ -1546,7 +1600,7 @@ function initPrintsIndexNav() {
       }
 
       if (atBottom && deltaY < -36) {
-        if (!printsExitToMaquettesArmed || !isGalleryIndexScrollReady()) return;
+        if (!printsMaquettesHandoffReady() || !isGalleryIndexScrollReady()) return;
         if (!galleryEdgesArmedFor("maquettes")) return;
 
         touchBottomHitCount = 0;
@@ -1742,26 +1796,113 @@ function fixGalleryHeights() {
   syncGalleryIndexPageHeights();
 }
 
-function promoteDetailImage(index) {
+function normalizeImageUrl(url) {
+  if (!url) return "";
+  const s = String(url);
+  try {
+    const parsed = new URL(s, window.location.origin);
+    const w = parsed.searchParams.get("w");
+    const path = parsed.pathname;
+    return w ? `${path}?w=${w}` : path;
+  } catch {
+    const path = s.split("?")[0];
+    if (path.includes("gallery-preview")) return `${path}:preview`;
+    if (path.includes("gallery-view")) return `${path}:view`;
+    return path;
+  }
+}
+
+function imageSrcMatches(img, url) {
+  if (!img || !url) return false;
+  const current = img.currentSrc || img.src || "";
+  return normalizeImageUrl(current) === normalizeImageUrl(url);
+}
+
+function clearDetailImagePresentation(viewport) {
+  viewport?.querySelectorAll(".gallery-rico__img").forEach((img) => {
+    img.style.removeProperty("transform");
+    img.style.removeProperty("transform-origin");
+  });
+}
+
+function syncActiveFrameImage(index) {
   const stage = document.getElementById("printsRicoStage");
-  const frame = stage?.querySelector(`.gallery-rico__frame[data-art-index="${index}"]`);
-  const img = frame?.querySelector("img");
-  const view = img?.dataset.viewSrc;
-  if (!img || !view) return { promoted: false, img };
-  if (img.src === view) return { promoted: false, img };
-  img.src = view;
-  return { promoted: true, img };
+  if (!stage) return null;
+
+  let firstImg = null;
+
+  stage.querySelectorAll(".gallery-rico__frame").forEach((frame) => {
+    const frameIndex = Number(frame.dataset.artIndex);
+    const isTarget = frameIndex === index;
+    const isAnimating =
+      frame.classList.contains("is-enter-from-right") ||
+      frame.classList.contains("is-enter-from-left") ||
+      frame.classList.contains("is-leave-to-left") ||
+      frame.classList.contains("is-leave-to-right");
+
+    if (!isTarget && !isAnimating && !frame.classList.contains("is-active")) {
+      frame.querySelectorAll(".gallery-rico__img").forEach((img) => {
+        img.removeAttribute("src");
+      });
+    }
+
+    if (!isTarget) return;
+
+    const imgs = [...frame.querySelectorAll(".gallery-rico__img")];
+    firstImg = imgs[0] || null;
+
+    imgs.forEach((img) => {
+      const view = img.dataset.viewSrc;
+      if (!view) return;
+
+      img.style.removeProperty("transform");
+      img.style.removeProperty("transform-origin");
+      img.loading = "eager";
+      img.src = view;
+    });
+  });
+
+  return firstImg;
+}
+
+function seedDetailImageFromGrid(index) {
+  const gridCell = document.querySelector(
+    `#printsGrid .gallery-index__cell[data-art-index="${index}"]`
+  );
+  const detailFrame = document.querySelector(
+    `#printsRicoStage .gallery-rico__frame[data-art-index="${index}"]`
+  );
+  if (!gridCell || !detailFrame) return;
+
+  const gridImgs = [...gridCell.querySelectorAll(".gallery-index__img")];
+  const detailImgs = [...detailFrame.querySelectorAll(".gallery-rico__img")];
+
+  detailImgs.forEach((img, i) => {
+    const gridImg = gridImgs[i] || gridImgs[0];
+    const loaded = gridImg?.currentSrc || gridImg?.src;
+    if (!loaded || loaded === window.location.href) return;
+    if (!imageSrcMatches(img, loaded)) {
+      img.src = loaded;
+    }
+  });
+}
+
+function activateDetailFrameImage(index) {
+  return syncActiveFrameImage(index);
 }
 
 function resetGalleryViewportSize() {
   const viewport = document.getElementById("printsRicoViewport");
   galleryLockedSquareSize = null;
   if (!viewport) return;
+  clearDetailImagePresentation(viewport);
   viewport.classList.remove("is-sized");
   viewport.removeAttribute("data-gallery-aspect");
   viewport.removeAttribute("data-gallery-fit-mode");
   viewport.style.removeProperty("width");
   viewport.style.removeProperty("height");
+  viewport.style.removeProperty("max-width");
+  viewport.style.removeProperty("max-height");
   viewport.style.removeProperty("aspect-ratio");
   viewport.style.removeProperty("--gallery-art-ratio");
   galleryFitToken += 1;
@@ -1786,29 +1927,18 @@ function isNearlySquare(nw, nh) {
 async function waitForGalleryImageReady(img, expectedSrc) {
   if (!img) return;
 
-  const expectedFile = expectedSrc
-    ? decodeURIComponent(expectedSrc.split("?")[0].split("/").pop())
-    : null;
-
-  const hasCorrectSrc = () => {
-    if (!expectedFile) return true;
-    const current = img.currentSrc || img.src || "";
-    try {
-      return decodeURIComponent(current.split("?")[0].split("/").pop()) === expectedFile;
-    } catch {
-      return current.includes(expectedFile);
-    }
-  };
-
   const isReady = () =>
-    img.complete && img.naturalWidth > 0 && img.naturalHeight > 0 && hasCorrectSrc();
+    img.complete &&
+    img.naturalWidth > 0 &&
+    img.naturalHeight > 0 &&
+    (!expectedSrc || imageSrcMatches(img, expectedSrc));
 
   if (!isReady()) {
     await new Promise((resolve) => {
       const done = () => resolve();
       img.addEventListener("load", done, { once: true });
       img.addEventListener("error", done, { once: true });
-      setTimeout(done, 1500);
+      setTimeout(done, 10000);
     });
   }
 
@@ -1820,11 +1950,13 @@ async function waitForGalleryImageReady(img, expectedSrc) {
 }
 
 function prefetchDetailImage(index) {
-  const stage = document.getElementById("printsRicoStage");
-  const img = stage?.querySelector(`.gallery-rico__frame[data-art-index="${index}"] img`);
-  if (!img || !img.dataset.viewSrc) return;
-  if (img.src !== img.dataset.viewSrc) img.src = img.dataset.viewSrc;
-  if (typeof img.decode === "function") img.decode().catch(() => {});
+  const item = catalog[index];
+  if (!item) return;
+  const view = itemViewSrc(item);
+  if (!view) return;
+  const loader = new Image();
+  loader.decoding = "async";
+  loader.src = view;
 }
 
 function ensureGalleryStageResizeObserver() {
@@ -1833,7 +1965,7 @@ function ensureGalleryStageResizeObserver() {
 
   let resizeTimer = 0;
   window.addEventListener("resize", () => {
-    if (galleryViewMode !== "detail") return;
+    if (galleryViewMode !== "detail" || !galleryImmersive) return;
     galleryLockedSquareSize = null;
     window.clearTimeout(resizeTimer);
     resizeTimer = window.setTimeout(() => {
@@ -2107,45 +2239,12 @@ function applyGalleryImmersiveViewportFit(viewport, nw, nh) {
 }
 
 function applyGalleryViewportFit(viewport, nw, nh) {
-  if (galleryImmersive) {
-    applyGalleryImmersiveViewportFit(viewport, nw, nh);
+  if (!galleryImmersive) {
+    clearDetailImagePresentation(viewport);
     return;
   }
 
-  const { maxW, maxH } = getGalleryDetailFitMetrics();
-  let w;
-  let h;
-
-  if (looksLikePartialDecode(nw, nh)) {
-    const side = galleryLockedSquareSize?.w ?? Math.min(maxW, maxH);
-    w = side;
-    h = side;
-    if (!galleryLockedSquareSize) galleryLockedSquareSize = { w, h };
-  } else if (isNearlySquare(nw, nh) && galleryLockedSquareSize) {
-    ({ w, h } = galleryLockedSquareSize);
-  } else {
-    ({ w, h } = computeGalleryViewportSize(nw, nh, maxW, maxH));
-    if (isNearlySquare(nw, nh)) {
-      const side = Math.min(w, h);
-      w = side;
-      h = side;
-      galleryLockedSquareSize = { w, h };
-    }
-  }
-
-  viewport.style.removeProperty("--gallery-art-ratio");
-  viewport.style.width = `${w}px`;
-  viewport.style.height = `${h}px`;
-  viewport.dataset.galleryAspect = String(w / h);
-  viewport.dataset.galleryFitMode = galleryImmersive ? "immersive" : "detail";
-  viewport.classList.add("is-sized");
-
-  if (viewport.offsetWidth < w - 2 || viewport.offsetHeight < h - 2) {
-    viewport.style.setProperty("max-width", "none", "important");
-    viewport.style.setProperty("max-height", "none", "important");
-    viewport.style.width = `${w}px`;
-    viewport.style.height = `${h}px`;
-  }
+  applyGalleryImmersiveViewportFit(viewport, nw, nh);
 }
 
 function fitGalleryViewportSync(index) {
@@ -2307,6 +2406,23 @@ async function ensureGalleryViewportFit(token, expectedSrc) {
   if (!(await waitForGalleryDetailReady(token))) return;
   if (token !== galleryFitToken || galleryViewMode !== "detail") return;
 
+  if (!galleryImmersive) {
+    if (frame.classList.contains("gallery-rico__frame--diptych")) {
+      await Promise.all(
+        [...frame.querySelectorAll(".gallery-rico__img")].map((diptychImg) =>
+          waitForGalleryImageReady(
+            diptychImg,
+            diptychImg.dataset.viewSrc || diptychImg.src
+          )
+        )
+      );
+    } else {
+      const srcToWaitFor = expectedSrc || img.dataset.viewSrc || img.src;
+      await waitForGalleryImageReady(img, srcToWaitFor);
+    }
+    return;
+  }
+
   const srcToWaitFor = expectedSrc || img.dataset.viewSrc || img.src;
 
   if (frame.classList.contains("gallery-rico__frame--diptych")) {
@@ -2326,31 +2442,37 @@ async function ensureGalleryViewportFit(token, expectedSrc) {
     return;
   }
 
-  await waitForGalleryImageReady(img, srcToWaitFor);
-  if (token !== galleryFitToken || galleryViewMode !== "detail") return;
-
-  if (galleryImmersive) {
-    await waitForImmersiveLayoutAndFit(token, viewport, frame);
-    return;
-  }
-
   galleryFitRetries = 0;
 
-  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-    applyGalleryViewportFit(viewport, img.naturalWidth, img.naturalHeight);
+  while (galleryFitRetries <= GALLERY_FIT_MAX_RETRIES) {
+    await waitForGalleryImageReady(img, srcToWaitFor);
+    if (token !== galleryFitToken || galleryViewMode !== "detail") return;
+
+    if (galleryImmersive) {
+      await waitForImmersiveLayoutAndFit(token, viewport, frame);
+      return;
+    }
+
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      applyGalleryViewportFit(viewport, img.naturalWidth, img.naturalHeight);
+
+      if (typeof img.decode === "function") {
+        img.decode()
+          .then(() => {
+            if (token !== galleryFitToken || galleryViewMode !== "detail") return;
+            const decodedW = img.naturalWidth;
+            const decodedH = img.naturalHeight;
+            if (!decodedW || !decodedH || looksLikePartialDecode(decodedW, decodedH)) return;
+            applyGalleryViewportFit(viewport, decodedW, decodedH);
+          })
+          .catch(() => {});
+      }
+      return;
+    }
+
+    galleryFitRetries += 1;
+    await new Promise((resolve) => window.setTimeout(resolve, 80));
   }
-
-  if (typeof img.decode !== "function") return;
-
-  img.decode()
-    .then(() => {
-      if (token !== galleryFitToken || galleryViewMode !== "detail") return;
-      const decodedW = img.naturalWidth;
-      const decodedH = img.naturalHeight;
-      if (!decodedW || !decodedH || looksLikePartialDecode(decodedW, decodedH)) return;
-      applyGalleryViewportFit(viewport, decodedW, decodedH);
-    })
-    .catch(() => {});
 }
 
 function fitGalleryViewport() {
@@ -2363,29 +2485,6 @@ function wireIndexImages() {
   document.querySelectorAll("#printsGrid .gallery-index__img").forEach((img) => {
     const cell = img.closest(".gallery-index__cell");
     const index = Number(cell?.dataset.artIndex);
-    img.addEventListener(
-      "error",
-      () => {
-        const view = img.dataset.viewSrc;
-        if (view && img.src !== view) {
-          img.src = view;
-          return;
-        }
-        const item = catalog[index];
-        if (item) {
-          const original = originalSrc(item.file);
-          if (img.src !== original) img.src = original;
-        }
-      },
-      { once: true }
-    );
-  });
-}
-
-function wireGalleryImages() {
-  document.querySelectorAll("#printsGrid .gallery-rico__img").forEach((img) => {
-    const frame = img.closest(".gallery-rico__frame");
-    const index = Number(frame?.dataset.artIndex);
     img.addEventListener(
       "error",
       () => {
@@ -2419,7 +2518,6 @@ async function buildGallery() {
   printsGrid.innerHTML = buildGalleryShell();
   lastIndexPageCount = indexPageCount();
   wireIndexImages();
-  wireGalleryImages();
   fixGalleryHeights();
   syncGalleryIndexPageHeights();
   initPrintsIndexNav();
@@ -2445,12 +2543,10 @@ async function loadCatalog() {
             price: work.price || "",
             sold: Boolean(work.sold),
             filesIndex: catalogFilesIndex(work.legacyFilename, index),
-            remoteViewSrc: work.imageUrl || null,
-            remotePreviewSrc: work.imageUrl || null,
+            remoteViewSrc: work.imageUrl ? sanitySizedImageUrl(work.imageUrl, 2400) : null,
+            remotePreviewSrc: work.imageUrl ? sanitySizedImageUrl(work.imageUrl, 720) : null,
           })
         );
-        const sg = await loadGallerySgData();
-        catalog = mergeMissingGalleryPanels(catalog, sg);
         catalog = catalog.filter((item) => isPrintMedium(item));
         return;
       }

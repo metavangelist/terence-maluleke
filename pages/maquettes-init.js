@@ -25,7 +25,7 @@
       medium: "Assamblage",
       dimensions: "7 x 3.5 cm",
       price: "ZAR 20000 USD 1250",
-      sold: false,
+      sold: true,
     },
     {
       file: "hjjjj copy.png",
@@ -34,7 +34,7 @@
       medium: "Assamblage",
       dimensions: "7 x 7 cm",
       price: "ZAR 20000 USD 1250",
-      sold: false,
+      sold: true,
     },
   ];
 
@@ -272,6 +272,18 @@
   }
 
   function applyMaqViewportFit(viewport, img) {
+    if (!maquettesImmersive) {
+      clearMaqImageContentPresentation(viewport);
+      viewport.classList.remove("is-sized");
+      viewport.style.removeProperty("width");
+      viewport.style.removeProperty("height");
+      viewport.style.removeProperty("max-width");
+      viewport.style.removeProperty("max-height");
+      viewport.removeAttribute("data-gallery-fit-mode");
+      viewport.removeAttribute("data-gallery-aspect");
+      return;
+    }
+
     const nw = img.naturalWidth;
     const nh = img.naturalHeight;
     const { maxW, maxH } = getMaqDetailFitMetrics();
@@ -315,15 +327,32 @@
   function syncActiveFrameAsset(index) {
     const item = CATALOG[index];
     const stage = document.getElementById("maqRicoStage");
-    const frame = stage?.querySelector(`.gallery-rico__frame[data-art-index="${index}"]`);
-    const img = frame?.querySelector("img");
-    if (!item || !img) return;
+    if (!stage) return;
 
-    const targetSrc = assetSrc(item.file);
-    if (img.getAttribute("src") !== targetSrc) {
+    stage.querySelectorAll(".gallery-rico__frame").forEach((frame) => {
+      const frameIndex = Number(frame.dataset.artIndex);
+      const isTarget = frameIndex === index;
+      const isAnimating =
+        frame.classList.contains("is-enter-from-right") ||
+        frame.classList.contains("is-enter-from-left") ||
+        frame.classList.contains("is-leave-to-left") ||
+        frame.classList.contains("is-leave-to-right");
+
+      if (!isTarget && !isAnimating && !frame.classList.contains("is-active")) {
+        frame.querySelectorAll("img").forEach((img) => img.removeAttribute("src"));
+        return;
+      }
+
+      if (!isTarget) return;
+
+      const img = frame.querySelector("img");
+      if (!item || !img) return;
+
+      const targetSrc = assetSrc(item.file);
+      img.loading = "eager";
       img.src = targetSrc;
-    }
-    img.dataset.assetFile = item.file;
+      img.dataset.assetFile = item.file;
+    });
   }
 
   function wireMaquetteImage(img) {
@@ -583,7 +612,7 @@
       <figure class="gallery-rico__frame${isActive ? " is-active" : ""}" data-art-index="${index}" aria-hidden="${isActive ? "false" : "true"}">
         <img
           class="gallery-rico__img"
-          src="${src}"
+          src="${isActive ? src : ""}"
           data-asset-file="${escapeHtml(item.file)}"
           alt="${escapeHtml(item.title)}"
           loading="${index === 0 ? "eager" : "lazy"}"
@@ -1068,6 +1097,11 @@
     await waitForImageReady(img);
     if (token !== maqFitToken || viewMode !== "detail") return;
 
+    if (!maquettesImmersive) {
+      clearMaqImageContentPresentation(viewport);
+      return;
+    }
+
     const nw = img.naturalWidth;
     const nh = img.naturalHeight;
 
@@ -1099,13 +1133,7 @@
     }
 
     maqFitRetries = 0;
-
-    if (maquettesImmersive) {
-      await waitForMaqImmersiveLayoutAndFit(token, viewport, img);
-      return;
-    }
-
-    applyMaqViewportFit(viewport, img);
+    await waitForMaqImmersiveLayoutAndFit(token, viewport, img);
   }
 
   function fitViewport() {
@@ -1141,6 +1169,10 @@
     if (contactEl && document.body.dataset.currentSection === "maquettes") {
       if (item.sold) contactEl.href = `mailto:${ENQUIRY_EMAIL}`;
       else contactEl.href = enquiryMailto(item);
+    }
+
+    if (viewMode === "detail" && typeof window.trackArtworkView === "function") {
+      window.trackArtworkView("assamblage", item.title);
     }
 
     const prevBtn = document.getElementById("maqRicoPrev");
@@ -1207,6 +1239,11 @@
     syncActiveFrameAsset(index);
     setNavExitMode(true);
     updateDisplay(index);
+
+    const item = CATALOG[index];
+    if (item && typeof window.trackArtworkView === "function") {
+      window.trackArtworkView("assamblage", item.title);
+    }
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {

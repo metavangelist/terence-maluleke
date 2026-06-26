@@ -12,7 +12,7 @@
       url.searchParams.set(`$${key}`, JSON.stringify(value));
     });
 
-    const res = await fetch(url.toString());
+    const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) throw new Error(`Sanity query failed (${res.status})`);
     const json = await res.json();
     return json.result;
@@ -33,21 +33,32 @@
     imageUrl,
     fetchGallery: () =>
       sanityQuery(
-        `*[_type == "artwork"] | order(sortOrder asc, year desc) {
-          _id, title, year, medium, dimensions, price, sold, legacyFilename,
-          "imageUrl": image.asset->url
+        `*[_type == "artwork" && !(pairRole == "secondary") && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) {
+          _id,
+          title,
+          year,
+          medium,
+          dimensions,
+          price,
+          sold,
+          legacyFilename,
+          presentationStyle,
+          pairRole,
+          "pairedArtworkId": pairedArtwork._ref,
+          "imageUrl": image.asset->url,
+          "secondImageUrl": secondImage.asset->url
         }`
       ),
     fetchAssamblage: () =>
       sanityQuery(
-        `*[_type == "assamblage"] | order(sortOrder asc) {
+        `*[_type == "assamblage"] | order(orderRank asc, title asc) {
           _id, title, year, medium, dimensions, price, sold, legacyFilename,
           "imageUrl": image.asset->url
         }`
       ),
     fetchStudyImages: () =>
       sanityQuery(
-        `*[_type == "studyImage"] | order(sortOrder asc) {
+        `*[_type == "studyImage"] | order(orderRank asc, title asc) {
           _id, title, legacyFilename, "imageUrl": image.asset->url
         }`
       ),
@@ -60,6 +71,6 @@
     fetchSiteSettings: () =>
       sanityQuery(`*[_id == "siteSettings"][0]{ siteTitle, enquiryEmail, instagramUrl }`),
     fetchArtistBio: () =>
-      sanityQuery(`*[_id == "artistInfo"][0]{ bioPlain }`),
+      sanityQuery(`*[_id == "artistInfo"][0]{ bio }`),
   };
 })();
