@@ -39,7 +39,7 @@
   ];
 
   const ASSET_BASE = "assets/maquettes";
-  const CACHE = "?v=20260615g";
+  const CACHE = "?v=20260628f";
   const ENQUIRY_EMAIL = "Contact@maluleke.art";
   const MAQ_MOBILE_FILES = {
     "Apples.png": "Apples-mobile.png",
@@ -109,8 +109,10 @@
   }
 
   const MAQ_CONTENT_BOUNDS_CACHE = new Map();
-  const MAQ_CONTENT_MEASURE_MAX = 512;
+  const MAQ_CONTENT_MEASURE_MAX = 1024;
   const MAQ_CONTENT_FILL_MIN = 0.93;
+  const MAQ_NAV_CONTENT_GAP = 10;
+  const MAQ_SCREEN_EDGE_GAP = 10;
 
   function measureMaqImageContentBounds(img) {
     const key = img.currentSrc || img.src;
@@ -192,6 +194,12 @@
   function syncMaqImageContentPresentation(img, viewport) {
     if (!img) return;
 
+    if (maquettesImmersive) {
+      img.style.removeProperty("transform");
+      img.style.removeProperty("transform-origin");
+      return;
+    }
+
     const nw = img.naturalWidth;
     const nh = img.naturalHeight;
     const bounds = measureMaqImageContentBounds(img);
@@ -211,11 +219,24 @@
     img.style.transformOrigin = `${originX}% ${originY}%`;
   }
 
+  function clearMaqImagePresentationStyles(img) {
+    if (!img) return;
+    [
+      "transform",
+      "transform-origin",
+      "width",
+      "height",
+      "max-width",
+      "max-height",
+      "position",
+      "left",
+      "top",
+      "object-fit",
+    ].forEach((prop) => img.style.removeProperty(prop));
+  }
+
   function clearMaqImageContentPresentation(viewport) {
-    viewport?.querySelectorAll(".gallery-rico__img").forEach((img) => {
-      img.style.removeProperty("transform");
-      img.style.removeProperty("transform-origin");
-    });
+    viewport?.querySelectorAll(".gallery-rico__img").forEach(clearMaqImagePresentationStyles);
   }
 
   function getMaqDetailFitMetrics() {
@@ -324,6 +345,15 @@
     return `${ASSET_BASE}/${encodeURI(resolveAssetFile(file))}${CACHE}`;
   }
 
+  function prefetchMaquetteAsset(index) {
+    const item = CATALOG[index];
+    if (!item) return;
+    const src = assetSrc(item.file);
+    if (window.ImagePreloadCache) {
+      window.ImagePreloadCache.load(src);
+    }
+  }
+
   function syncActiveFrameAsset(index) {
     const item = CATALOG[index];
     const stage = document.getElementById("maqRicoStage");
@@ -349,9 +379,32 @@
       if (!item || !img) return;
 
       const targetSrc = assetSrc(item.file);
+      const gridImg = document.querySelector(
+        `#maquettesGrid .gallery-index__cell[data-art-index="${index}"] img`
+      );
+      const gridSrc = gridImg?.currentSrc || gridImg?.src;
+
       img.loading = "eager";
-      img.src = targetSrc;
       img.dataset.assetFile = item.file;
+
+      const applyTarget = () => {
+        if (Number(frame.dataset.artIndex) !== index) return;
+        if (!frame.classList.contains("is-active")) return;
+        img.src = targetSrc;
+        if (viewMode === "detail") scheduleFitViewport();
+      };
+
+      if (window.ImagePreloadCache) {
+        window.ImagePreloadCache.load(targetSrc).then((cached) => {
+          if (cached?.naturalWidth) applyTarget();
+        });
+      }
+
+      if (gridSrc && gridSrc !== window.location.href) {
+        img.src = gridSrc;
+      } else {
+        img.src = targetSrc;
+      }
     });
   }
 
@@ -811,6 +864,9 @@
     viewport.style.removeProperty("max-width");
     viewport.style.removeProperty("max-height");
     viewport.style.removeProperty("aspect-ratio");
+    viewport.style.removeProperty("--maq-fit-w");
+    viewport.style.removeProperty("--maq-fit-h");
+    viewport.style.removeProperty("--maq-viewport-offset-y");
     viewport.removeAttribute("data-gallery-fit-mode");
     viewport.removeAttribute("data-gallery-aspect");
     maqFitToken += 1;
@@ -856,19 +912,64 @@
     return { stageW, stageH };
   }
 
+  function getMaqImmersiveSafeZone() {
+    const detail = document.getElementById("maquettesDetail");
+    const detailStyle = detail ? getComputedStyle(detail) : null;
+    const padBottom = detailStyle ? parseFloat(detailStyle.paddingBottom) : 6;
+    const nav = document.querySelector(".site-nav");
+    const navBottom = nav ? nav.getBoundingClientRect().bottom : 68;
+    const top = navBottom + MAQ_NAV_CONTENT_GAP;
+    const bottom = window.innerHeight - Math.max(padBottom, MAQ_SCREEN_EDGE_GAP);
+    const height = Math.max(240, Math.floor(bottom - top));
+
+    return {
+      top,
+      bottom,
+      height,
+      centerY: (top + bottom) / 2,
+    };
+  }
+
   function getMaqImmersiveWindowMetrics() {
     const detail = document.getElementById("maquettesDetail");
     const detailStyle = detail ? getComputedStyle(detail) : null;
-    const padTop = detailStyle ? parseFloat(detailStyle.paddingTop) : 56;
-    const padBottom = detailStyle ? parseFloat(detailStyle.paddingBottom) : 6;
     const padLeft = detailStyle ? parseFloat(detailStyle.paddingLeft) : 8;
     const padRight = detailStyle ? parseFloat(detailStyle.paddingRight) : 8;
     const { reserve } = getMaqNavColumnMetrics();
+    const { stageW, stageH } = getMaqImmersiveStageSize();
+    const safe = getMaqImmersiveSafeZone();
 
-    return {
-      maxW: Math.max(240, Math.floor(window.innerWidth - padLeft - padRight - reserve)),
-      maxH: Math.max(240, Math.floor(window.innerHeight - padTop - padBottom)),
-    };
+    const maxW = stageW > 200
+      ? Math.max(240, Math.floor(stageW))
+      : Math.max(240, Math.floor(window.innerWidth - padLeft - padRight - reserve));
+    const maxH = Math.max(240, Math.min(
+      stageH > 200 ? stageH : safe.height,
+      safe.height
+    ));
+
+    return { maxW, maxH, safe };
+  }
+
+  function applyMaqViewportVerticalCenter(viewport, viewportH) {
+    const stage = document.getElementById("maqRicoStage");
+    if (!stage || !viewport || !viewportH) return;
+
+    const stageRect = stage.getBoundingClientRect();
+    const safe = getMaqImmersiveSafeZone();
+    const stageCenterY = stageRect.top + stageRect.height / 2;
+    let offsetY = Math.round(safe.centerY - stageCenterY);
+
+    const flexTop = stageRect.top + (stageRect.height - viewportH) / 2;
+    let viewportTop = flexTop + offsetY;
+    if (viewportTop < safe.top) {
+      offsetY += Math.round(safe.top - viewportTop);
+    }
+    const viewportBottom = viewportTop + viewportH;
+    if (viewportBottom > safe.bottom) {
+      offsetY -= Math.round(viewportBottom - safe.bottom);
+    }
+
+    viewport.style.setProperty("--maq-viewport-offset-y", `${offsetY}px`);
   }
 
   function getMaqImmersiveTargetStageH() {
@@ -911,15 +1012,44 @@
   function applyMaquettesImmersiveViewportFit(viewport, img) {
     const nw = img.naturalWidth;
     const nh = img.naturalHeight;
+    if (!nw || !nh || !viewport) return;
+
+    clearMaqImagePresentationStyles(img);
     viewport.style.removeProperty("width");
     viewport.style.removeProperty("height");
     viewport.style.removeProperty("max-width");
     viewport.style.removeProperty("max-height");
     viewport.style.removeProperty("aspect-ratio");
+
+    const { maxW, maxH } = getMaqImmersiveWindowMetrics();
+    const bounds = measureMaqImageContentBounds(img);
+    const cw = bounds ? bounds.x1 - bounds.x0 : nw;
+    const ch = bounds ? bounds.y1 - bounds.y0 : nh;
+    const { w, h } = computeMaqViewportSize(cw, ch, maxW, maxH);
+
+    viewport.style.setProperty("--maq-fit-w", `${w}px`);
+    viewport.style.setProperty("--maq-fit-h", `${h}px`);
     viewport.dataset.galleryFitMode = "immersive";
-    if (nw && nh) viewport.dataset.galleryAspect = String(nw / nh);
+    viewport.dataset.galleryAspect = String(nw / nh);
     viewport.classList.add("is-sized");
-    syncMaqImageContentPresentation(img, viewport);
+    applyMaqViewportVerticalCenter(viewport, h);
+
+    const fill = Math.min(cw / nw, ch / nh);
+    if (!bounds || fill >= MAQ_CONTENT_FILL_MIN) {
+      return;
+    }
+
+    const scale = Math.min(w / cw, h / ch);
+    const cx = (bounds.x0 + bounds.x1) / 2;
+    const cy = (bounds.y0 + bounds.y1) / 2;
+
+    img.style.position = "absolute";
+    img.style.width = `${Math.round(nw * scale)}px`;
+    img.style.height = `${Math.round(nh * scale)}px`;
+    img.style.maxWidth = "none";
+    img.style.maxHeight = "none";
+    img.style.left = `${Math.round(w / 2 - cx * scale)}px`;
+    img.style.top = `${Math.round(h / 2 - cy * scale)}px`;
   }
 
   function observeMaquettesStageForImmersiveFit() {
@@ -1237,6 +1367,9 @@
     });
 
     syncActiveFrameAsset(index);
+    prefetchMaquetteAsset(index);
+    prefetchMaquetteAsset(index + 1);
+    prefetchMaquetteAsset(index - 1);
     setNavExitMode(true);
     updateDisplay(index);
 
@@ -1291,8 +1424,21 @@
       const index = Number(cell.dataset.artIndex);
       if (!Number.isFinite(index)) return;
       event.preventDefault();
+      prefetchMaquetteAsset(index);
       openDetail(index);
     });
+
+    grid.addEventListener(
+      "pointerenter",
+      (event) => {
+        if (viewMode !== "grid") return;
+        const cell = event.target.closest(".gallery-index__cell");
+        if (!cell) return;
+        const index = Number(cell.dataset.artIndex);
+        if (Number.isFinite(index)) prefetchMaquetteAsset(index);
+      },
+      true
+    );
 
     const GRID_EDGE_DEBOUNCE_MS = 250;
 
@@ -1525,8 +1671,16 @@
     isBuilt = true;
   }
 
+  function getAllPreloadUrls() {
+    return CATALOG.map((item) => assetSrc(item.file));
+  }
+
   function init() {
     buildMaquettes();
+
+    window.maquettesPreload = { getAllUrls: getAllPreloadUrls };
+    window.maquettesCatalogReady = true;
+    document.dispatchEvent(new CustomEvent("maquettes:ready"));
     initMaquettesImmersiveTap();
 
     window.maquettesShowGrid = showGrid;

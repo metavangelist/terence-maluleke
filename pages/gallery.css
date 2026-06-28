@@ -83,7 +83,7 @@
   grid-template-rows: auto minmax(0, 1fr);
   align-content: stretch;
   padding:
-    max(64px, calc(env(safe-area-inset-top) + 56px))
+    var(--site-nav-clearance, max(64px, calc(env(safe-area-inset-top) + 56px)))
     clamp(12px, 3vw, 32px)
     max(14px, env(safe-area-inset-bottom))
     clamp(12px, 3vw, 32px);
@@ -152,7 +152,7 @@
   justify-content: center;
   box-sizing: border-box;
   padding:
-    max(64px, calc(env(safe-area-inset-top) + 56px))
+    var(--site-nav-clearance, max(64px, calc(env(safe-area-inset-top) + 56px)))
     clamp(12px, 3vw, 32px)
     max(14px, env(safe-area-inset-bottom))
     clamp(12px, 3vw, 32px);
@@ -313,10 +313,12 @@
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail .gallery-rico__stage {
   grid-row: unset;
   min-height: 0;
+  min-width: 0;
   height: 100%;
-  width: auto;
-  max-width: 100%;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  justify-self: stretch;
   overflow: visible;
 }
 
@@ -636,9 +638,9 @@
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive {
   grid-template-rows: minmax(0, 1fr);
   padding:
-    max(56px, calc(env(safe-area-inset-top) + 48px))
+    var(--site-nav-clearance, max(72px, calc(env(safe-area-inset-top) + 68px)))
     clamp(2px, 0.5vw, 8px)
-    max(6px, env(safe-area-inset-bottom))
+    var(--site-nav-clearance, max(72px, calc(env(safe-area-inset-top) + 68px)))
     clamp(2px, 0.5vw, 8px);
 }
 
@@ -690,6 +692,18 @@
   align-self: stretch;
 }
 
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__viewport > .gallery-rico__frame {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__frame:not(.is-active):not(.is-enter-from-right):not(.is-enter-from-left):not(.is-leave-to-left):not(.is-leave-to-right) {
+  display: none !important;
+}
+
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__frame.is-active,
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive .gallery-rico__frame.is-active .gallery-rico__diptych {
   width: 100%;
@@ -697,9 +711,13 @@
 }
 
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive.is-fit-pending .gallery-rico__viewport {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+:is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive.is-fit-pending .gallery-rico__viewport:not(.is-sized) .gallery-rico__img {
+  opacity: 0.96;
 }
 
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive:not(.is-fit-pending) .gallery-rico__viewport {
@@ -709,6 +727,31 @@
 
 :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive.is-fit-pending .gallery-rico__nav {
   visibility: visible;
+}
+
+#section-maquettes .gallery-rico--detail.is-immersive.is-fit-pending .gallery-rico__viewport {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Assamblage fullscreen: size to opaque artwork bounds (not full PNG canvas). */
+#section-maquettes .gallery-rico--detail.is-immersive .gallery-rico__stage {
+  align-items: center;
+  justify-content: center;
+}
+
+#section-maquettes .gallery-rico--detail.is-immersive .gallery-rico__viewport.is-sized {
+  width: var(--maq-fit-w, 100%) !important;
+  height: var(--maq-fit-h, 100%) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  margin-inline: auto;
+  overflow: hidden;
+  position: relative;
+  transform: translateY(var(--maq-viewport-offset-y, 0px));
 }
 
 @media (max-width: 768px) {
@@ -738,9 +781,9 @@
 
   :is(#section-gallery, #section-prints, #section-maquettes) .gallery-rico--detail.is-immersive {
     padding:
-      max(48px, calc(env(safe-area-inset-top) + 36px))
+      var(--site-nav-clearance, max(72px, calc(env(safe-area-inset-top) + 68px)))
       clamp(2px, 1vw, 6px)
-      max(4px, env(safe-area-inset-bottom))
+      var(--site-nav-clearance, max(72px, calc(env(safe-area-inset-top) + 68px)))
       clamp(2px, 1vw, 6px);
   }
 

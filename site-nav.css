@@ -15,6 +15,17 @@
   pointer-events: none;
 }
 
+/* Minimum space below fixed nav (title row + exit row + breathing room). */
+:root {
+  --site-nav-clearance: calc(
+    max(14px, env(safe-area-inset-top))
+    + 12px
+    + 44px
+    + 10px
+    + 20px
+  );
+}
+
 .site-nav--with-home {
   grid-template-columns: 1fr auto 1fr;
 }

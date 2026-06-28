@@ -1005,6 +1005,11 @@ function openGalleryDetail(index) {
   window.galleryGoToIndex?.(index, false);
   if (index >= catalog.length - 1) disarmGalleryExitToPrints();
 
+  prefetchDetailImage(index);
+  prefetchDetailImage(nextGalleryCatalogIndex(index, 1));
+  prefetchDetailImage(nextGalleryCatalogIndex(index, -1));
+  seedDetailImageFromGrid(index);
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       activateDetailFrameImage(index);
@@ -1704,15 +1709,24 @@ function setGalleryImmersive(on) {
   detail?.classList.toggle("is-immersive", galleryImmersive);
   galleryLockedSquareSize = null;
   resetGalleryViewportSize();
-  setGalleryImmersiveFitPending(galleryImmersive);
 
   if (!galleryImmersive) {
+    setGalleryImmersiveFitPending(false);
     galleryImmersiveStageObserver?.disconnect();
     galleryImmersiveStageObserver = null;
     galleryFitRetries = 0;
   } else {
     galleryFitRetries = 0;
     resetGalleryImmersiveStageStability();
+    setGalleryImmersiveFitPending(true);
+
+    const viewport = document.getElementById("galleryRicoViewport");
+    const frame = viewport?.querySelector(".gallery-rico__frame.is-active");
+    const { nw, nh } = getFrameNaturalSize(frame);
+    if (viewport && nw && nh) {
+      applyGalleryImmersiveViewportFit(viewport, nw, nh);
+      setGalleryImmersiveFitPending(false);
+    }
   }
 
   requestAnimationFrame(() => {
@@ -1855,12 +1869,38 @@ function syncActiveFrameImage(index) {
 
     imgs.forEach((img) => {
       const view = img.dataset.viewSrc;
+      const preview = img.dataset.previewSrc;
       if (!view) return;
 
       img.style.removeProperty("transform");
       img.style.removeProperty("transform-origin");
       img.loading = "eager";
-      img.src = view;
+
+      if (imageSrcMatches(img, view) && img.complete && img.naturalWidth > 0) return;
+
+      const upgradeToView = () => {
+        if (Number(frame.dataset.artIndex) !== index) return;
+        if (!frame.classList.contains("is-active")) return;
+        img.src = view;
+        if (galleryViewMode === "detail") {
+          scheduleFitGalleryViewport(view);
+        }
+      };
+
+      if (window.ImagePreloadCache?.has(view)) {
+        img.src = view;
+        window.ImagePreloadCache.load(view).then((cached) => {
+          if (cached?.naturalWidth) upgradeToView();
+        });
+      } else if (preview && !imageSrcMatches(img, view)) {
+        img.src = preview;
+        window.ImagePreloadCache?.load(view).then((cached) => {
+          if (cached?.naturalWidth) upgradeToView();
+        });
+      } else {
+        img.src = view;
+        window.ImagePreloadCache?.load(view);
+      }
     });
   });
 
@@ -1956,6 +1996,10 @@ function prefetchDetailImage(index) {
   if (!item) return;
   const view = itemViewSrc(item);
   if (!view) return;
+  if (window.ImagePreloadCache) {
+    window.ImagePreloadCache.load(view);
+    return;
+  }
   const loader = new Image();
   loader.decoding = "async";
   loader.src = view;
@@ -2361,37 +2405,28 @@ function maybeRevealImmersiveViewport(viewport, frame) {
 }
 
 async function waitForImmersiveLayoutAndFit(token, viewport, frame) {
-  galleryFitRetries = 0;
-  resetGalleryImmersiveStageStability();
+  if (token !== galleryFitToken || galleryViewMode !== "detail" || !galleryImmersive) return;
 
-  while (galleryFitRetries <= GALLERY_FIT_MAX_RETRIES) {
-    await new Promise((resolve) => {
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
-    });
-    if (token !== galleryFitToken || galleryViewMode !== "detail" || !galleryImmersive) return;
+  const imgs = frame?.classList.contains("gallery-rico__frame--diptych")
+    ? [...frame.querySelectorAll(".gallery-rico__img")]
+    : [frame?.querySelector(".gallery-rico__img")].filter(Boolean);
 
-    if (!immersiveLayoutReady() || !immersiveStageSizeStable()) {
-      galleryFitRetries += 1;
-      await new Promise((resolve) => window.setTimeout(resolve, 60));
-      continue;
-    }
+  await Promise.all(
+    imgs.map((img) => waitForGalleryImageReady(img, img.dataset.viewSrc || img.src))
+  );
+  if (token !== galleryFitToken || !galleryImmersive) return;
 
-    const finalSize = await waitForStableFrameNaturalSize(frame, token);
-    if (token !== galleryFitToken || !galleryImmersive) return;
-    if (!finalSize) {
-      galleryFitRetries += 1;
-      await new Promise((resolve) => window.setTimeout(resolve, 60));
-      continue;
-    }
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+  if (token !== galleryFitToken || !galleryImmersive) return;
 
-    if (maybeRevealImmersiveViewport(viewport, frame)) return;
-
-    galleryFitRetries += 1;
-    await new Promise((resolve) => window.setTimeout(resolve, 60));
-  }
-
-  const fallbackSize = getFrameNaturalSize(frame);
-  applyGalleryImmersiveViewportFit(viewport, fallbackSize.nw, fallbackSize.nh);
+  const { nw, nh } = getFrameNaturalSize(frame);
+  applyGalleryImmersiveViewportFit(
+    viewport,
+    nw || imgs[0]?.naturalWidth || 1,
+    nh || imgs[0]?.naturalHeight || 1
+  );
   setGalleryImmersiveFitPending(false);
 }
 
@@ -2617,19 +2652,30 @@ function prefetchView(index) {
   const item = catalog[index];
   if (!item) return;
 
-  const src = viewSrc(item.file);
-  if (viewCache.has(src)) return;
+  const src = itemViewSrc(item);
+  if (!src || viewCache.has(src)) return;
 
-  const img = new Image();
-  viewCache.set(
-    src,
-    new Promise((resolve) => {
-      const finish = () => resolve();
-      img.addEventListener("load", finish, { once: true });
-      img.addEventListener("error", finish, { once: true });
-      img.src = src;
-    })
-  );
+  const promise = window.ImagePreloadCache
+    ? window.ImagePreloadCache.load(src)
+    : new Promise((resolve) => {
+        const img = new Image();
+        const finish = () => resolve();
+        img.addEventListener("load", finish, { once: true });
+        img.addEventListener("error", finish, { once: true });
+        img.src = src;
+      });
+
+  viewCache.set(src, promise);
+}
+
+function getAllPreloadUrls() {
+  const previews = [];
+  const views = [];
+  catalog.forEach((item) => {
+    previews.push(itemPreviewSrc(item));
+    views.push(itemViewSrc(item));
+  });
+  return { previews, views };
 }
 
 function forceGalleryInternalScroll() {
@@ -2678,6 +2724,7 @@ async function initGallery() {
     viewSrc,
     originalSrc,
     prefetchView,
+    getAllUrls: getAllPreloadUrls,
   };
 
   window.galleryRefreshScrollFx = () => {

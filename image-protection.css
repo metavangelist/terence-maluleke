@@ -15,10 +15,11 @@
   pointer-events: none;
 }
 
-:is(.gallery-rico__frame, .gallery-index__cell, .study-gallery__item, .blob__painting) {
+:is(.gallery-index__cell, .study-gallery__item, .blob__painting) {
   position: relative;
 }
 
+/* gallery-rico__frame stays position:absolute (gallery.css) so slides stack in the viewport */
 :is(.gallery-rico__frame, .gallery-index__cell, .study-gallery__item, .blob__painting)::after {
   content: "";
   position: absolute;

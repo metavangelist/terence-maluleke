@@ -296,7 +296,12 @@ async function initStudyGallery() {
     }
   } catch {}
 
-  if (!files.length) return;
+  if (!files.length) {
+    window.studyCatalogReady = true;
+    window.studyPreload = { getAllUrls: () => [] };
+    document.dispatchEvent(new CustomEvent("study:ready"));
+    return;
+  }
 
   const zones = ["tl", "tr", "bl", "br"];
   const perZone = Math.ceil(files.length / zones.length);
@@ -313,7 +318,7 @@ async function initStudyGallery() {
             <img
               src="assets/study/${encodeURIComponent(file)}"
               alt=""
-              loading="lazy"
+              loading="eager"
               decoding="async"
               draggable="false"
             />
@@ -322,4 +327,11 @@ async function initStudyGallery() {
       )
       .join("");
   });
+
+  window.studyCatalogReady = true;
+  window.studyPreload = {
+    getAllUrls: () =>
+      files.map((file) => `assets/study/${encodeURIComponent(file)}`),
+  };
+  document.dispatchEvent(new CustomEvent("study:ready"));
 }
