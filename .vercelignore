@@ -8,6 +8,10 @@ scripts/
 assets/images/*
 !assets/images/DSC01668_2.jpg
 assets/maquettes/cfg.png
+assets/maquettes/Apples.png
+assets/maquettes/fg.png
+assets/maquettes/hjjjj copy.png
+assets/maquettes/*.orig.png
 assets/Ali Fraizer.M4V
 assets/pinterest-gallery-ref.jpg
 assets/reference-gallery-layout.png
