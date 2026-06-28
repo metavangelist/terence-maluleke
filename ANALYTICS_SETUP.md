@@ -35,7 +35,7 @@ Redeploy after saving env vars so `/api/analytics` is available.
 Create `studio/.env` (not committed):
 
 ```env
-SANITY_STUDIO_ANALYTICS_API_URL=https://terence-maluleke-v2.vercel.app/api/analytics
+SANITY_STUDIO_ANALYTICS_API_URL=https://maluleke.art/api/analytics
 SANITY_STUDIO_ANALYTICS_API_SECRET=same-secret-as-vercel
 ```
 

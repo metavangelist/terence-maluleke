@@ -52,7 +52,7 @@ export function AnalyticsTool({ apiUrl, apiSecret }: AnalyticsToolProps) {
               Analytics
             </Heading>
             <Text muted size={1}>
-              Live Google Analytics 4 data for terence-maluleke-v2.vercel.app.
+              Live Google Analytics 4 data for maluleke.art.
             </Text>
             <DateRangeSelector value={range} onChange={setRange} />
           </Stack>

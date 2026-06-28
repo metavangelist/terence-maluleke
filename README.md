@@ -4,7 +4,7 @@ Artist website for Terence Ntsako Maluleke — digital artist and painter.
 
 ## Live
 
-- **v2 (active):** https://terence-maluleke-v2.vercel.app
+- **v2 (active):** https://maluleke.art
 - **v1 (stable):** https://terence-maluleke.vercel.app
 
 ## Local preview

@@ -12,7 +12,7 @@ const GRID_PREVIEW_WIDTH = 480;
 export const STUDIO_SITE_URL = (
   typeof process !== "undefined" && process.env.SANITY_STUDIO_SITE_URL
     ? process.env.SANITY_STUDIO_SITE_URL
-    : "https://terence-maluleke-v2.vercel.app"
+    : "https://maluleke.art"
 ).replace(/\/$/, "");
 
 export function legacyPreviewUrl(

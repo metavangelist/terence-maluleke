@@ -220,7 +220,10 @@
     document.body.dataset.currentSection = route.slug;
     document.documentElement.dataset.currentSection = route.slug;
 
-    document.title = route.title || "Terence Ntsako Maluleke";
+    document.title =
+      route.slug === "home"
+        ? "Terence Ntsako Maluleke — Artist | Paintings, Prints & Assamblage"
+        : `${route.title || "Terence Ntsako Maluleke"} | Terence Ntsako Maluleke`;
   }
 
   function isTransitioning() {

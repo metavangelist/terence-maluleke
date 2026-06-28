@@ -29,7 +29,7 @@ import {
 
 const analyticsApiUrl =
   process.env.SANITY_STUDIO_ANALYTICS_API_URL ||
-  "https://terence-maluleke-v2.vercel.app/api/analytics";
+  "https://maluleke.art/api/analytics";
 const analyticsApiSecret = process.env.SANITY_STUDIO_ANALYTICS_API_SECRET || "";
 
 function singleton(
