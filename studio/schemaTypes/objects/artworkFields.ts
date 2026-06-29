@@ -2,8 +2,8 @@ import { defineField } from "sanity";
 
 function hasUploadedImage(value: unknown) {
   if (!value || typeof value !== "object") return false;
-  const asset = (value as { asset?: { _ref?: string } }).asset;
-  return Boolean(asset?._ref);
+  const obj = value as { asset?: { _ref?: string }; _upload?: unknown };
+  return Boolean(obj.asset?._ref || obj._upload);
 }
 
 function hasLegacyFilename(value: unknown) {
@@ -44,7 +44,7 @@ export const artworkFields = [
         if (publishedId && context.getClient) {
           try {
             const publishedLegacy = await context
-              .getClient({ apiVersion: "2025-06-27" })
+              .getClient({ apiVersion: "2024-01-01" })
               .fetch<string | null>(`*[_id == $id][0].legacyFilename`, { id: publishedId });
             if (hasLegacyFilename(publishedLegacy)) return true;
           } catch {

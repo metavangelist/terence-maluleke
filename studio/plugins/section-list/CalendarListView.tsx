@@ -15,10 +15,10 @@ import { useClient } from "sanity";
 import { useRouter } from "sanity/router";
 import { usePaneRouter } from "sanity/structure";
 import styled from "styled-components";
-import { canonicalDocumentId } from "../../lib/delete-document";
+import { canonicalDocumentId, dedupeDocumentVersions } from "../../lib/delete-document";
 import { DocumentRowActions } from "./DocumentRowActions";
 
-const EVENTS_QUERY = `*[_type == "exhibition" && !(_id in path("drafts.**"))] | order(eventDate asc) {
+const EVENTS_QUERY = `*[_type == "exhibition"] | order(eventDate asc) {
   _id,
   name,
   eventDate,
@@ -75,8 +75,9 @@ export function CalendarListView() {
 
   const load = useCallback(async () => {
     try {
-      const result = await client.fetch<ExhibitionDoc[]>(EVENTS_QUERY);
-      setDocs(Array.isArray(result) ? result : []);
+      const previewClient = client.withConfig({ perspective: "previewDrafts" });
+      const result = await previewClient.fetch<ExhibitionDoc[]>(EVENTS_QUERY);
+      setDocs(dedupeDocumentVersions(Array.isArray(result) ? result : []));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load calendar events");
     } finally {

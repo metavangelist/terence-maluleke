@@ -26,15 +26,15 @@ export type SectionGridConfig = {
   helpText: string;
 };
 
-const publishedBase = (type: string, extraFilter: string) =>
-  `*[_type == "${type}" && !(pairRole == "secondary") && !(_id in path("drafts.**"))${extraFilter}] | order(orderRank asc, title asc) ${GRID_DOC_FIELDS}`;
+const gridDocsBase = (type: string, extraFilter: string) =>
+  `*[_type == "${type}" && !(pairRole == "secondary")${extraFilter}] | order(orderRank asc, title asc) ${GRID_DOC_FIELDS}`;
 
 export const galleryGridConfig: SectionGridConfig = {
   id: "gallery",
   title: "Gallery",
   heading: "Gallery",
   documentType: "artwork",
-  query: publishedBase("artwork", ` && ${notPrintFilter}`),
+  query: gridDocsBase("artwork", ` && ${notPrintFilter}`),
   listenQuery: `*[_type == "artwork" && ${notPrintFilter}]`,
   addButtonLabel: "Add artwork",
   createIntentPath: "/intent/create/template=artwork;type=artwork/",
@@ -47,7 +47,7 @@ export const printsGridConfig: SectionGridConfig = {
   title: "Prints",
   heading: "Prints",
   documentType: "artwork",
-  query: publishedBase("artwork", ` && ${isPrintFilter}`),
+  query: gridDocsBase("artwork", ` && ${isPrintFilter}`),
   listenQuery: `*[_type == "artwork" && ${isPrintFilter}]`,
   addButtonLabel: "Add print",
   createIntentPath: "/intent/create/template=artwork;type=artwork/",
@@ -60,7 +60,7 @@ export const assamblageGridConfig: SectionGridConfig = {
   title: "Assamblage",
   heading: "Assamblage",
   documentType: "assamblage",
-  query: publishedBase("assamblage", ""),
+  query: gridDocsBase("assamblage", ""),
   listenQuery: '*[_type == "assamblage"]',
   addButtonLabel: "Add assamblage",
   createIntentPath: "/intent/create/template=assamblage;type=assamblage/",

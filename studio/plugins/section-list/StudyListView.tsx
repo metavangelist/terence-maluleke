@@ -16,12 +16,12 @@ import { useClient } from "sanity";
 import { useRouter } from "sanity/router";
 import { usePaneRouter } from "sanity/structure";
 import styled from "styled-components";
-import { canonicalDocumentId } from "../../lib/delete-document";
+import { canonicalDocumentId, dedupeDocumentVersions } from "../../lib/delete-document";
 import { gridPreviewUrl, STUDIO_SITE_URL } from "../../lib/grid-image-url";
 import { legacyPreviewUrlCandidates } from "../../lib/legacy-asset-candidates";
 import { DocumentRowActions } from "./DocumentRowActions";
 
-const STUDY_QUERY = `*[_type == "studyImage" && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) {
+const STUDY_QUERY = `*[_type == "studyImage"] | order(orderRank asc, title asc) {
   _id,
   title,
   legacyFilename,
@@ -89,8 +89,10 @@ export function StudyListView() {
 
   const load = useCallback(async () => {
     try {
-      const result = await client.fetch<StudyDoc[]>(STUDY_QUERY);
-      setDocs(enrichStudyDocs(client, Array.isArray(result) ? result : []));
+      const previewClient = client.withConfig({ perspective: "previewDrafts" });
+      const result = await previewClient.fetch<StudyDoc[]>(STUDY_QUERY);
+      const deduped = dedupeDocumentVersions(Array.isArray(result) ? result : []);
+      setDocs(enrichStudyDocs(previewClient, deduped));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load study images");
     } finally {

@@ -635,9 +635,10 @@ export function SectionGridView({ config }: { config: SectionGridConfig }) {
 
   const load = useCallback(async () => {
     try {
-      const result = await client.fetch<ArtworkGridDoc[]>(config.query);
+      const previewClient = client.withConfig({ perspective: "previewDrafts" });
+      const result = await previewClient.fetch<ArtworkGridDoc[]>(config.query);
       const deduped = dedupeArtworkDocs(Array.isArray(result) ? result : []);
-      setDocs(enrichGridDocs(client, deduped, config.documentType));
+      setDocs(enrichGridDocs(previewClient, deduped, config.documentType));
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to load ${config.title.toLowerCase()}`);
     } finally {

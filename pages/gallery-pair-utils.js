@@ -1,8 +1,14 @@
 (function () {
   const LEGACY_DIPTYCH_FILES = ["AFTER FAIR 002.jpg", "AFTER FAIR 001.jpg"];
 
+  function isLegacyDiptychSecondaryFile(file) {
+    return file === LEGACY_DIPTYCH_FILES[1];
+  }
+
   function isStackedPairSecondary(item) {
-    return item?.pairRole === "secondary";
+    if (item?.pairRole === "secondary") return true;
+    if (isLegacyDiptychSecondaryFile(item?.file)) return true;
+    return false;
   }
 
   function isLegacyDiptychFile(file) {
@@ -88,6 +94,7 @@
   window.galleryPairUtils = {
     LEGACY_DIPTYCH_FILES,
     isStackedPairSecondary,
+    isLegacyDiptychSecondaryFile,
     isLegacyDiptychFile,
     isStackedPairItem,
     getStackedPairPanels,

@@ -734,6 +734,7 @@ function gridLayout() {
 
 function buildGridEntries() {
   const entries = [];
+  const seenDiptychKeys = new Set();
 
   for (let i = 0; i < catalog.length; i += 1) {
     const item = catalog[i];
@@ -741,10 +742,25 @@ function buildGridEntries() {
 
     const panels = getStackedPairPanels(item);
     if (panels?.top && panels?.bottom) {
+      const diptychKey =
+        panels.top.sanityId ||
+        panels.top.file ||
+        panels.top.title ||
+        String(i);
+      if (seenDiptychKeys.has(diptychKey)) continue;
+      seenDiptychKeys.add(diptychKey);
+
+      const bottomIndex = catalog.findIndex(
+        (entry) =>
+          entry === panels.bottom ||
+          (panels.bottom.sanityId && entry.sanityId === panels.bottom.sanityId) ||
+          (panels.bottom.file && entry.file === panels.bottom.file)
+      );
+
       entries.push({
         kind: "diptych",
         catalogIndex: i,
-        indices: [i],
+        indices: bottomIndex >= 0 ? [i, bottomIndex] : [i],
         item: panels.top,
         bottomItem: panels.bottom,
       });

@@ -1,4 +1,5 @@
 import { packGalleryPages, gridLayout, listOpenGridSlots } from "./gallery-grid-layout.js";
+import { dedupeDocumentVersions } from "./delete-document.js";
 import { resolveGridPreviewUrls } from "./grid-image-url.js";
 import type { SanityClient } from "sanity";
 
@@ -51,23 +52,7 @@ export function canonicalArtworkId(id: string) {
 }
 
 export function dedupeArtworkDocs(docs: ArtworkGridDoc[]): ArtworkGridDoc[] {
-  const byCanonical = new Map<string, ArtworkGridDoc>();
-  const order: string[] = [];
-
-  for (const doc of docs) {
-    const key = canonicalArtworkId(doc._id);
-    const existing = byCanonical.get(key);
-    if (!existing) {
-      byCanonical.set(key, doc);
-      order.push(key);
-      continue;
-    }
-    if (doc._id.startsWith("drafts.") && !existing._id.startsWith("drafts.")) {
-      byCanonical.set(key, doc);
-    }
-  }
-
-  return order.map((key) => byCanonical.get(key)!);
+  return dedupeDocumentVersions(docs);
 }
 
 export function buildGridEntriesFromDocs(docs: ArtworkGridDoc[]): GridEntry[] {
