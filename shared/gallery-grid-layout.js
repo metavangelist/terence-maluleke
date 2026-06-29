@@ -197,37 +197,43 @@ function packGalleryPages(entries, options = {}) {
   let page0HasDiptych = false;
   let pendingDiptych = null;
 
-  function     pushDiptychToNewPage(diptychEntry) {
-      page = flushPage(pages, page);
-      page0Mode = "done";
-      page = [];
-      placeDiptychOnStandardPage(page, diptychEntry, gridLayout(mobile).cols);
-    }
+  function finishPage0() {
+    page = flushPage(pages, page);
+    page0Mode = "done";
+  }
 
   for (const entry of entries) {
     const onPage0 = pages.length === 0 && page0Mode === "bento";
 
     if (onPage0) {
       if (entry.kind === "diptych") {
-        if (page0SingleCount <= maxSinglesWithDiptych) {
+        if (!page0HasDiptych && page0SingleCount <= maxSinglesWithDiptych) {
           placeDiptychOnBentoPage0(page, entry, mobile);
           page0HasDiptych = true;
         } else {
-          pushDiptychToNewPage(entry);
+          // Too many singles for bento + diptych — defer diptych and keep filling page 0.
+          pendingDiptych = entry;
         }
         continue;
       }
 
-      if (page0SingleCount < maxSinglesWithDiptych) {
+      if (!page0HasDiptych && page0SingleCount < maxSinglesWithDiptych) {
         placeSingleOnBentoPage0(page, entry, page0SingleCount, mobile);
         page0SingleCount += 1;
+        if (isPageFull(page, mobile)) finishPage0();
+        continue;
+      }
+
+      if (page0HasDiptych && page0SingleCount < maxSinglesWithDiptych) {
+        placeSingleOnBentoPage0(page, entry, page0SingleCount, mobile);
+        page0SingleCount += 1;
+        if (isPageFull(page, mobile)) finishPage0();
         continue;
       }
 
       if (page0SingleCount === maxSinglesWithDiptych && page0HasDiptych) {
-        // Page 0 bento is full (4 singles + diptych). More singles go to page 2+.
-        page = flushPage(pages, page);
-        page0Mode = "done";
+        // Page 0 bento is full (max singles + diptych). More singles go to page 2+.
+        finishPage0();
         if (!addToStandardPage(page, entry, mobile)) {
           page = flushPage(pages, page);
           addToStandardPage(page, entry, mobile);
@@ -235,16 +241,16 @@ function packGalleryPages(entries, options = {}) {
         continue;
       }
 
-      page0Mode = "standard";
+      // Singles beyond bento slots but page 0 still has free cells (diptych deferred).
       const placement = firstFreeCellOnPage0Standard(page, mobile);
       if (placement) {
         page.push({ entry, placement });
         page0SingleCount += 1;
+        if (isPageFull(page, mobile)) finishPage0();
         continue;
       }
 
-      page = flushPage(pages, page);
-      page0Mode = "done";
+      finishPage0();
     }
 
     if (pendingDiptych) {

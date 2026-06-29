@@ -2,6 +2,7 @@ import type { SanityClient } from "@sanity/client";
 import { LexoRank } from "lexorank";
 import {
   canonicalArtworkId,
+  flatEntryOrder,
   reorderDocsByEntryMove,
   reorderDocsToPosition,
   type ArtworkGridDoc,
@@ -9,13 +10,25 @@ import {
 
 const ORDER_FIELD = "orderRank";
 
-function parseRank(value: unknown, fallback: LexoRank) {
-  if (typeof value !== "string" || !value) return fallback;
-  try {
-    return LexoRank.parse(value);
-  } catch {
-    return fallback;
+/** Rewrite orderRank for every doc so sort order matches the visual grid exactly. */
+export async function rebalanceOrderRanks(client: SanityClient, docs: ArtworkGridDoc[]) {
+  if (!docs.length) return;
+
+  let rank = LexoRank.min();
+  const transaction = client.transaction();
+
+  for (const doc of docs) {
+    rank = rank.genNext();
+    const orderRank = rank.toString();
+    transaction.patch(doc._id, { set: { [ORDER_FIELD]: orderRank } });
+
+    const publishedId = canonicalArtworkId(doc._id);
+    if (doc._id.startsWith("drafts.") && publishedId !== doc._id) {
+      transaction.patch(publishedId, { set: { [ORDER_FIELD]: orderRank } });
+    }
   }
+
+  await transaction.commit({ visibility: "sync" });
 }
 
 export async function reorderArtwork(
@@ -25,27 +38,7 @@ export async function reorderArtwork(
 ) {
   const moving = docs[movingIndex];
   if (!moving) return;
-
-  const prev = docs[movingIndex - 1];
-  const next = docs[movingIndex + 1];
-  const prevRank = parseRank(prev?.orderRank, LexoRank.min());
-  const nextRank = parseRank(next?.orderRank, LexoRank.max());
-  const newRank =
-    prev && next
-      ? prevRank.between(nextRank)
-      : prev
-        ? prevRank.genNext()
-        : nextRank.genPrev();
-
-  const rank = newRank.toString();
-  const transaction = client.transaction().patch(moving._id, { set: { [ORDER_FIELD]: rank } });
-
-  const publishedId = canonicalArtworkId(moving._id);
-  if (moving._id.startsWith("drafts.") && publishedId !== moving._id) {
-    transaction.patch(publishedId, { set: { [ORDER_FIELD]: rank } });
-  }
-
-  await transaction.commit({ visibility: "sync" });
+  await rebalanceOrderRanks(client, docs);
 }
 
 export async function commitEntryReorder(
@@ -76,5 +69,9 @@ export async function commitMoveToPosition(
   const reordered = reorderDocsToPosition(docs, sourceId, targetPosition);
   const destIndex = reordered.findIndex((doc) => doc._id === sourceId);
   if (destIndex < 0) return;
+
+  const currentIndex = flatEntryOrder(docs).indexOf(sourceEntryId);
+  if (currentIndex === destIndex) return;
+
   await reorderArtwork(client, reordered, destIndex);
 }

@@ -20,8 +20,7 @@ export function GalleryPositionInput(props: NumberInputProps) {
   const medium = useFormValue(["medium"]) as string | undefined;
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const syncedRef = useRef(false);
-  const lastAppliedRef = useRef<number | null>(null);
+  const syncedPositionRef = useRef<number | null>(null);
 
   const scope =
     documentType === "artwork" && /^print/i.test(String(medium || "").trim())
@@ -29,18 +28,17 @@ export function GalleryPositionInput(props: NumberInputProps) {
       : "gallery";
 
   const applyPosition = useCallback(
-    async (targetPosition: number, { silent = false } = {}) => {
+    async (targetPosition: number) => {
       if (!documentId || !documentType || readOnly) return;
       const position = parsePosition(targetPosition);
-      if (lastAppliedRef.current === position) return;
 
       setBusy(true);
-      if (!silent) setStatus(null);
+      setStatus(null);
       try {
         const docs = await fetchGridDocs(client, documentType, scope);
         await commitMoveToPosition(client, docs, canonicalArtworkId(documentId), position);
-        lastAppliedRef.current = position;
-        if (!silent) setStatus(`Gallery position updated to ${position}.`);
+        syncedPositionRef.current = position;
+        setStatus(`Gallery position updated to ${position}.`);
       } catch (err) {
         setStatus(err instanceof Error ? err.message : "Could not update gallery position.");
       } finally {
@@ -51,7 +49,7 @@ export function GalleryPositionInput(props: NumberInputProps) {
   );
 
   useEffect(() => {
-    if (!documentId || !documentType || syncedRef.current) return;
+    if (!documentId || !documentType) return;
 
     let cancelled = false;
     (async () => {
@@ -65,23 +63,14 @@ export function GalleryPositionInput(props: NumberInputProps) {
 
         if (currentIndex >= 0) {
           const currentPosition = currentIndex + 1;
+          syncedPositionRef.current = currentPosition;
           if (value == null) onChange(set(currentPosition));
-          lastAppliedRef.current = currentPosition;
-          syncedRef.current = true;
           return;
         }
 
-        const initialPosition = parsePosition(value ?? 1);
-        if (initialPosition === 1) {
-          await commitMoveToPosition(client, docs, id, 1);
-          if (cancelled) return;
-          onChange(set(1));
-          lastAppliedRef.current = 1;
-          setStatus("Placed at position 1 in the gallery.");
-        }
-        syncedRef.current = true;
+        syncedPositionRef.current = null;
       } catch {
-        if (!cancelled) syncedRef.current = true;
+        if (!cancelled) syncedPositionRef.current = null;
       }
     })();
 
@@ -100,7 +89,10 @@ export function GalleryPositionInput(props: NumberInputProps) {
   );
 
   const handleBlur = useCallback(() => {
-    void applyPosition(parsePosition(value ?? 1));
+    if (value == null) return;
+    const position = parsePosition(value);
+    if (syncedPositionRef.current === position) return;
+    void applyPosition(position);
   }, [applyPosition, value]);
 
   return (
@@ -110,14 +102,15 @@ export function GalleryPositionInput(props: NumberInputProps) {
         min={1}
         step={1}
         inputMode="numeric"
-        value={value == null ? "1" : String(value)}
+        value={value == null ? "" : String(value)}
+        placeholder="1"
         readOnly={readOnly || busy}
         onChange={handleChange}
         onBlur={handleBlur}
       />
       <Text size={1} muted>
-        1 = first in the gallery grid. Lower numbers appear earlier. Changes apply when you leave
-        this field.
+        1 = first in the gallery grid. Lower numbers appear earlier. Reordering only happens when
+        you change this number and leave the field.
       </Text>
       {status ? (
         <Text size={1} muted>
