@@ -1,4 +1,5 @@
 import { defineField } from "sanity";
+import { GalleryPositionInput } from "../../plugins/gallery-position";
 
 function hasUploadedImage(value: unknown) {
   if (!value || typeof value !== "object") return false;
@@ -24,6 +25,16 @@ export const artworkFields = [
     type: "slug",
     group: "details",
     options: { source: "title", maxLength: 96 },
+  }),
+  defineField({
+    name: "galleryPosition",
+    title: "Gallery position",
+    type: "number",
+    group: "details",
+    initialValue: 1,
+    description: "Where this artwork appears in the gallery grid. 1 = first.",
+    components: { input: GalleryPositionInput },
+    hidden: ({ document }) => document?.pairRole === "secondary",
   }),
   defineField({
     name: "image",
