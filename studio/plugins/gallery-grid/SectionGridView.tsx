@@ -688,7 +688,7 @@ export function SectionGridView({ config }: { config: SectionGridConfig }) {
       setSaving(true);
       setError(null);
       try {
-        await commitMoveToPosition(client, docs, entryId, targetPosition);
+        await commitMoveToPosition(client, docs, entryId, targetPosition, config.reorderScope);
         await load();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Reorder failed");
@@ -708,7 +708,7 @@ export function SectionGridView({ config }: { config: SectionGridConfig }) {
       setSaving(true);
       setError(null);
       try {
-        await commitEntryReorder(client, docs, sourceId, targetId);
+        await commitEntryReorder(client, docs, sourceId, targetId, config.reorderScope);
         await load();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Reorder failed");

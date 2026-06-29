@@ -25,5 +25,16 @@ export default defineConfig({
   ],
   schema: {
     types: schemaTypes,
+    templates: (prev) => [
+      ...prev,
+      {
+        id: "printArtwork",
+        title: "Print",
+        schemaType: "artwork",
+        value: {
+          medium: "Print",
+        },
+      },
+    ],
   },
 });

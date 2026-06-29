@@ -5,6 +5,38 @@
   const host = cfg.useCdn ? "apicdn" : "api";
   const base = `https://${cfg.projectId}.${host}.sanity.io/v${cfg.apiVersion}/data/query/${cfg.dataset}`;
 
+  const ARTWORK_FIELDS = `{
+    _id,
+    title,
+    year,
+    medium,
+    dimensions,
+    price,
+    sold,
+    legacyFilename,
+    presentationStyle,
+    pairRole,
+    "pairedArtworkId": pairedArtwork._ref,
+    "imageUrl": image.asset->url,
+    "secondImageUrl": secondImage.asset->url
+  }`;
+
+  const ASSAMBLAGE_FIELDS = `{
+    _id,
+    title,
+    year,
+    medium,
+    dimensions,
+    price,
+    sold,
+    legacyFilename,
+    presentationStyle,
+    pairRole,
+    "pairedArtworkId": pairedArtwork._ref,
+    "imageUrl": image.asset->url,
+    "secondImageUrl": secondImage.asset->url
+  }`;
+
   async function sanityQuery(query, params = {}) {
     const url = new URL(base);
     url.searchParams.set("query", query);
@@ -24,7 +56,7 @@
     const [, id, dimensions, format] = ref.split("-");
     const w = options.width ? `&w=${options.width}` : "";
     const h = options.height ? `&h=${options.height}` : "";
-  const fit = options.fit ? `&fit=${options.fit}` : "";
+    const fit = options.fit ? `&fit=${options.fit}` : "";
     return `https://cdn.sanity.io/images/${cfg.projectId}/${cfg.dataset}/${id}-${dimensions}.${format || "jpg"}?auto=format${w}${h}${fit}`;
   }
 
@@ -33,28 +65,19 @@
     imageUrl,
     fetchGallery: () =>
       sanityQuery(
-        `*[_type == "artwork" && !(pairRole == "secondary") && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) {
-          _id,
-          title,
-          year,
-          medium,
-          dimensions,
-          price,
-          sold,
-          legacyFilename,
-          presentationStyle,
-          pairRole,
-          "pairedArtworkId": pairedArtwork._ref,
-          "imageUrl": image.asset->url,
-          "secondImageUrl": secondImage.asset->url
-        }`
+        `*[_type == "artwork" && !(pairRole == "secondary") && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) ${ARTWORK_FIELDS}`
+      ),
+    fetchPaintings: () =>
+      sanityQuery(
+        `*[_type == "artwork" && !(pairRole == "secondary") && !lower(coalesce(medium, "")) match "print*" && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) ${ARTWORK_FIELDS}`
+      ),
+    fetchPrints: () =>
+      sanityQuery(
+        `*[_type == "artwork" && !(pairRole == "secondary") && lower(coalesce(medium, "")) match "print*" && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) ${ARTWORK_FIELDS}`
       ),
     fetchAssamblage: () =>
       sanityQuery(
-        `*[_type == "assamblage"] | order(orderRank asc, title asc) {
-          _id, title, year, medium, dimensions, price, sold, legacyFilename,
-          "imageUrl": image.asset->url
-        }`
+        `*[_type == "assamblage" && !(pairRole == "secondary") && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) ${ASSAMBLAGE_FIELDS}`
       ),
     fetchStudyImages: () =>
       sanityQuery(

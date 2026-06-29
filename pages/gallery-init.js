@@ -2582,9 +2582,10 @@ async function buildGallery() {
 }
 
 async function loadCatalog() {
-  if (window.sanityClient?.fetchGallery) {
+  const fetchPaintings = window.sanityClient?.fetchPaintings || window.sanityClient?.fetchGallery;
+  if (fetchPaintings) {
     try {
-      const works = await window.sanityClient.fetchGallery();
+      const works = await fetchPaintings();
       if (Array.isArray(works) && works.length > 0) {
         const worksById = Object.fromEntries(works.map((work) => [work._id, work]));
         catalog = works

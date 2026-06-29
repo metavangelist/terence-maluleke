@@ -16,7 +16,9 @@ export type GridEntry = {
 
 export type ArtworkGridDoc = {
   _id: string;
+  _type?: string;
   title?: string;
+  medium?: string | null;
   orderRank?: string;
   presentationStyle?: string | null;
   pairRole?: string | null;

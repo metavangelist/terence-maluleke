@@ -7,8 +7,13 @@ import {
   reorderDocsToPosition,
   type ArtworkGridDoc,
 } from "./gallery-grid-entries";
+import { fetchGridDocs, type GridDocScope } from "./fetch-grid-docs";
 
 const ORDER_FIELD = "orderRank";
+
+function isPrintMedium(medium: unknown) {
+  return /^print/i.test(String(medium || "").trim());
+}
 
 /** Rewrite orderRank for every doc so sort order matches the visual grid exactly. */
 export async function rebalanceOrderRanks(client: SanityClient, docs: ArtworkGridDoc[]) {
@@ -31,21 +36,48 @@ export async function rebalanceOrderRanks(client: SanityClient, docs: ArtworkGri
   await transaction.commit({ visibility: "sync" });
 }
 
+async function rebalanceScopedDocs(
+  client: SanityClient,
+  docs: ArtworkGridDoc[],
+  reorderedPartition: ArtworkGridDoc[],
+  scope: GridDocScope
+) {
+  if (!docs.length) return;
+
+  if (docs[0]._type === "artwork") {
+    const allDocs = await fetchGridDocs(client, "artwork", "all");
+    const galleryDocs =
+      scope === "gallery"
+        ? reorderedPartition
+        : allDocs.filter((doc) => !isPrintMedium(doc.medium));
+    const printDocs =
+      scope === "prints"
+        ? reorderedPartition
+        : allDocs.filter((doc) => isPrintMedium(doc.medium));
+
+    await rebalanceOrderRanks(client, [...galleryDocs, ...printDocs]);
+    return;
+  }
+
+  await rebalanceOrderRanks(client, reorderedPartition);
+}
+
 export async function reorderArtwork(
   client: SanityClient,
   docs: ArtworkGridDoc[],
-  movingIndex: number
+  movingIndex: number,
+  scope: GridDocScope = "gallery"
 ) {
-  const moving = docs[movingIndex];
-  if (!moving) return;
-  await rebalanceOrderRanks(client, docs);
+  if (!docs[movingIndex]) return;
+  await rebalanceScopedDocs(client, docs, docs, scope);
 }
 
 export async function commitEntryReorder(
   client: SanityClient,
   docs: ArtworkGridDoc[],
   sourceEntryId: string,
-  targetEntryId: string
+  targetEntryId: string,
+  scope: GridDocScope = "gallery"
 ) {
   const sourceId = docs.find((doc) => canonicalArtworkId(doc._id) === sourceEntryId)?._id;
   const targetId = docs.find((doc) => canonicalArtworkId(doc._id) === targetEntryId)?._id;
@@ -54,14 +86,15 @@ export async function commitEntryReorder(
   const reordered = reorderDocsByEntryMove(docs, sourceId, targetId);
   const destIndex = reordered.findIndex((doc) => doc._id === sourceId);
   if (destIndex < 0) return;
-  await reorderArtwork(client, reordered, destIndex);
+  await rebalanceScopedDocs(client, docs, reordered, scope);
 }
 
 export async function commitMoveToPosition(
   client: SanityClient,
   docs: ArtworkGridDoc[],
   sourceEntryId: string,
-  targetPosition: number
+  targetPosition: number,
+  scope: GridDocScope = "gallery"
 ) {
   const sourceId = docs.find((doc) => canonicalArtworkId(doc._id) === sourceEntryId)?._id;
   if (!sourceId) return;
@@ -73,5 +106,5 @@ export async function commitMoveToPosition(
   const currentIndex = flatEntryOrder(docs).indexOf(sourceEntryId);
   if (currentIndex === destIndex) return;
 
-  await reorderArtwork(client, reordered, destIndex);
+  await rebalanceScopedDocs(client, docs, reordered, scope);
 }

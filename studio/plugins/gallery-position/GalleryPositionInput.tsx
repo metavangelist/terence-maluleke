@@ -36,7 +36,7 @@ export function GalleryPositionInput(props: NumberInputProps) {
       setStatus(null);
       try {
         const docs = await fetchGridDocs(client, documentType, scope);
-        await commitMoveToPosition(client, docs, canonicalArtworkId(documentId), position);
+        await commitMoveToPosition(client, docs, canonicalArtworkId(documentId), position, scope);
         syncedPositionRef.current = position;
         setStatus(`Gallery position updated to ${position}.`);
       } catch (err) {

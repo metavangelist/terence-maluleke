@@ -54,22 +54,29 @@ const VIEW_BASE = "assets/gallery-view";
 const ORIGINAL_BASE = "assets/images";
 const CACHE = "?v=20260614c";
 const ENQUIRY_EMAIL = "Contact@maluleke.art";
-const AFTER_FAIR_DIPTYCH_FILES = ["AFTER FAIR 002.jpg", "AFTER FAIR 001.jpg"];
 
-function isPrintMedium(item) {
-  return /^print\b/i.test(String(item?.medium || "").trim());
+function pairUtils() {
+  return window.galleryPairUtils || {};
 }
 
 function afterFairDiptychPrimaryIndex() {
-  return catalog.findIndex((item) => item.file === AFTER_FAIR_DIPTYCH_FILES[0]);
+  return pairUtils().findDiptychPrimaryIndex?.(catalog) ?? -1;
 }
 
 function afterFairDiptychSecondaryIndex() {
-  return catalog.findIndex((item) => item.file === AFTER_FAIR_DIPTYCH_FILES[1]);
+  return pairUtils().findDiptychSecondaryIndex?.(catalog) ?? -1;
 }
 
-function isAfterFairDiptychItem(item) {
-  return AFTER_FAIR_DIPTYCH_FILES.includes(item?.file);
+function isStackedPairItem(item) {
+  return pairUtils().isStackedPairItem?.(item) ?? false;
+}
+
+function getStackedPairPanels(item) {
+  return pairUtils().getStackedPairPanels?.(item, catalog) || null;
+}
+
+function isPrintMedium(item) {
+  return /^print\b/i.test(String(item?.medium || "").trim());
 }
 
 function nextGalleryCatalogIndex(from, delta) {
@@ -550,12 +557,11 @@ function subtitleForItem(item, index) {
 }
 
 function diptychPartnerItem(item) {
-  if (!isAfterFairDiptychItem(item)) return null;
-  const partnerFile =
-    item.file === AFTER_FAIR_DIPTYCH_FILES[0]
-      ? AFTER_FAIR_DIPTYCH_FILES[1]
-      : AFTER_FAIR_DIPTYCH_FILES[0];
-  return catalog.find((entry) => entry.file === partnerFile) || null;
+  const panels = getStackedPairPanels(item);
+  if (!panels) return null;
+  if (panels.top === item) return panels.bottom;
+  if (panels.bottom === item) return panels.top;
+  return panels.bottom;
 }
 
 function diptychStackMarkup(topItem, bottomItem, loading = "lazy") {
@@ -591,19 +597,14 @@ function diptychStackMarkup(topItem, bottomItem, loading = "lazy") {
 }
 
 function frameHtml(item, index, isActive) {
-  if (isAfterFairDiptychItem(item)) {
-    const topItem =
-      item.file === AFTER_FAIR_DIPTYCH_FILES[0] ? item : diptychPartnerItem(item) || item;
-    const bottomItem =
-      item.file === AFTER_FAIR_DIPTYCH_FILES[1] ? item : diptychPartnerItem(item);
-    if (bottomItem) {
-      const loading = index < 8 ? "eager" : "lazy";
-      return `
+  const panels = getStackedPairPanels(item);
+  if (panels?.top && panels?.bottom) {
+    const loading = index < 8 ? "eager" : "lazy";
+    return `
         <figure class="gallery-rico__frame gallery-rico__frame--diptych${isActive ? " is-active" : ""}" data-art-index="${index}" aria-hidden="${isActive ? "false" : "true"}">
-          ${diptychStackMarkup(topItem, bottomItem, loading)}
+          ${diptychStackMarkup(panels.top, panels.bottom, loading)}
         </figure>
       `;
-    }
   }
 
   const preview = itemPreviewSrc(item);
@@ -732,24 +733,40 @@ function gridLayout() {
 }
 
 function buildGridEntries() {
-  const [topFile, bottomFile] = AFTER_FAIR_DIPTYCH_FILES;
-  const topIdx = catalog.findIndex((item) => item.file === topFile);
-  const bottomIdx = catalog.findIndex((item) => item.file === bottomFile);
-  const hasDiptych = topIdx >= 0 && bottomIdx >= 0;
   const entries = [];
+  const seenDiptychKeys = new Set();
 
   for (let i = 0; i < catalog.length; i += 1) {
     const item = catalog[i];
-    if (hasDiptych && item.file === bottomFile) continue;
-    if (hasDiptych && item.file === topFile) {
+    if (pairUtils().isStackedPairSecondary?.(item)) continue;
+
+    const panels = getStackedPairPanels(item);
+    if (panels?.top && panels?.bottom) {
+      const diptychKey =
+        panels.top.sanityId ||
+        panels.top.file ||
+        panels.top.title ||
+        String(i);
+      if (seenDiptychKeys.has(diptychKey)) continue;
+      seenDiptychKeys.add(diptychKey);
+
+      const bottomIndex = catalog.findIndex(
+        (entry) =>
+          entry === panels.bottom ||
+          (panels.bottom.sanityId && entry.sanityId === panels.bottom.sanityId) ||
+          (panels.bottom.file && entry.file === panels.bottom.file)
+      );
+
       entries.push({
         kind: "diptych",
-        catalogIndex: topIdx,
-        indices: [topIdx, bottomIdx],
-        item: catalog[topIdx],
+        catalogIndex: i,
+        indices: bottomIndex >= 0 ? [i, bottomIndex] : [i],
+        item: panels.top,
+        bottomItem: panels.bottom,
       });
       continue;
     }
+
     entries.push({ kind: "single", catalogIndex: i, item });
   }
 
@@ -812,9 +829,9 @@ function buildIndexCellMarkup(item, index, placement = null) {
 }
 
 function buildDiptychCellMarkup(entry, placement) {
-  const [topIdx, bottomIdx] = entry.indices;
-  const topItem = catalog[topIdx];
-  const bottomItem = catalog[bottomIdx];
+  const topItem = entry.item;
+  const bottomItem = entry.bottomItem || diptychPartnerItem(topItem);
+  if (!bottomItem) return buildIndexCellMarkup(topItem, entry.catalogIndex, placement);
   const topPreview = itemPreviewSrc(topItem);
   const bottomPreview = itemPreviewSrc(bottomItem);
   const topView = itemViewSrc(topItem);
@@ -828,7 +845,7 @@ function buildDiptychCellMarkup(entry, placement) {
     <button
       type="button"
       class="gallery-index__cell gallery-index__cell--diptych"
-      data-art-index="${topIdx}"
+      data-art-index="${entry.catalogIndex}"
       data-diptych="true"
       ${gridStyle}
       aria-label="View ${escapeHtml(topItem.title)}"
@@ -2564,24 +2581,47 @@ async function buildGallery() {
 }
 
 async function loadCatalog() {
-  if (window.sanityClient?.fetchGallery) {
+  const fetchPrints = window.sanityClient?.fetchPrints || window.sanityClient?.fetchGallery;
+  if (fetchPrints) {
     try {
-      const works = await window.sanityClient.fetchGallery();
+      const works = await fetchPrints();
       if (Array.isArray(works) && works.length > 0) {
-        catalog = works.map((work, index) =>
-          normalizeCatalogItem({
-            file: work.legacyFilename || `${work.title}.jpg`,
-            title: work.title,
-            year: work.year || "",
-            medium: work.medium || "",
-            dimensions: work.dimensions || "",
-            price: work.price || "",
-            sold: Boolean(work.sold),
-            filesIndex: catalogFilesIndex(work.legacyFilename, index),
-            remoteViewSrc: work.imageUrl ? sanitySizedImageUrl(work.imageUrl, 2400) : null,
-            remotePreviewSrc: work.imageUrl ? sanitySizedImageUrl(work.imageUrl, 720) : null,
-          })
-        );
+        const worksById = Object.fromEntries(works.map((work) => [work._id, work]));
+        catalog = works
+          .filter((work) => work.pairRole !== "secondary")
+          .map((work, index) => {
+            let secondImageUrl = work.secondImageUrl || null;
+            if (
+              work.presentationStyle === "stackedPair" &&
+              work.pairedArtworkId &&
+              !secondImageUrl
+            ) {
+              secondImageUrl = worksById[work.pairedArtworkId]?.imageUrl || null;
+            }
+
+            return normalizeCatalogItem({
+              sanityId: work._id,
+              file: work.legacyFilename || `${work.title}.jpg`,
+              title: work.title,
+              year: work.year || "",
+              medium: work.medium || "",
+              dimensions: work.dimensions || "",
+              price: work.price || "",
+              sold: Boolean(work.sold),
+              presentationStyle: work.presentationStyle || "single",
+              pairRole: work.pairRole || "",
+              pairedArtworkId: work.pairedArtworkId || "",
+              filesIndex: catalogFilesIndex(work.legacyFilename, index),
+              remoteViewSrc: work.imageUrl ? sanitySizedImageUrl(work.imageUrl, 2400) : null,
+              remotePreviewSrc: work.imageUrl ? sanitySizedImageUrl(work.imageUrl, 720) : null,
+              secondImageUrl: secondImageUrl
+                ? sanitySizedImageUrl(secondImageUrl, 2400)
+                : null,
+              secondPreviewUrl: secondImageUrl
+                ? sanitySizedImageUrl(secondImageUrl, 720)
+                : null,
+            });
+          });
         catalog = catalog.filter((item) => isPrintMedium(item));
         return;
       }

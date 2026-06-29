@@ -1,3 +1,5 @@
+import type { GridDocScope } from "../../lib/fetch-grid-docs";
+
 const GRID_DOC_FIELDS = `{
   _id,
   title,
@@ -19,6 +21,7 @@ export type SectionGridConfig = {
   title: string;
   heading: string;
   documentType: "artwork" | "assamblage";
+  reorderScope: GridDocScope;
   query: string;
   listenQuery: string;
   addButtonLabel: string;
@@ -34,6 +37,7 @@ export const galleryGridConfig: SectionGridConfig = {
   title: "Gallery",
   heading: "Gallery",
   documentType: "artwork",
+  reorderScope: "gallery",
   query: gridDocsBase("artwork", ` && ${notPrintFilter}`),
   listenQuery: `*[_type == "artwork" && ${notPrintFilter}]`,
   addButtonLabel: "Add artwork",
@@ -47,10 +51,11 @@ export const printsGridConfig: SectionGridConfig = {
   title: "Prints",
   heading: "Prints",
   documentType: "artwork",
+  reorderScope: "prints",
   query: gridDocsBase("artwork", ` && ${isPrintFilter}`),
   listenQuery: `*[_type == "artwork" && ${isPrintFilter}]`,
   addButtonLabel: "Add print",
-  createIntentPath: "/intent/create/template=artwork;type=artwork/",
+  createIntentPath: "/intent/create/template=printArtwork;type=artwork/",
   helpText:
     "Hover the pencil icon to edit, or the trash icon to remove from the website. Numbers show display order — change a number in the order list to move without dragging. Medium must start with “Print”. Desktop: 6 per page; mobile: 4 per page.",
 };
@@ -60,6 +65,7 @@ export const assamblageGridConfig: SectionGridConfig = {
   title: "Assamblage",
   heading: "Assamblage",
   documentType: "assamblage",
+  reorderScope: "gallery",
   query: gridDocsBase("assamblage", ""),
   listenQuery: '*[_type == "assamblage"]',
   addButtonLabel: "Add assamblage",
