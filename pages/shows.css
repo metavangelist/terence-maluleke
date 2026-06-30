@@ -25,6 +25,20 @@
   isolation: isolate;
 }
 
+#section-calendar .exhib.is-detail-open {
+  align-items: flex-start;
+  overflow-x: visible;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) 1rem
+    max(1.5rem, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+#section-calendar .exhib:has(.exhib-detail:not([hidden])) {
+  overflow-x: visible;
+}
+
 #section-calendar .exhib-bg {
   position: absolute;
   inset: 0;
@@ -64,11 +78,13 @@
   position: relative;
   z-index: 1;
   width: min(380px, 92vw);
+  flex-shrink: 0;
   padding: 0;
   background: transparent;
   font-family: "Helvetica Neue", Arial, sans-serif;
   color: var(--exhib-cal-ink);
   transform: translateZ(0);
+  overflow: visible;
 }
 
 #section-calendar .exhib-cal {
@@ -245,6 +261,12 @@
   border-top: 0;
   text-align: center;
   color: var(--exhib-cal-ink);
+  position: relative;
+  left: 50%;
+  width: min(380px, 92vw);
+  max-width: 94vw;
+  box-sizing: border-box;
+  transform: translateX(-50%);
 }
 
 #section-calendar .exhib-detail[hidden] {

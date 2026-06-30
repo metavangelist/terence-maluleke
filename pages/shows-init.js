@@ -33,6 +33,8 @@
   ];
 
   const section = document.getElementById("section-calendar");
+  const exhibEl = section?.querySelector(".exhib");
+  const panelEl = section?.querySelector(".exhib-panel");
   const weeksEl = document.getElementById("exhibCalWeeks");
   const monthLabel = document.getElementById("exhibMonthLabel");
   const detailEl = document.getElementById("exhibDetail");
@@ -228,10 +230,51 @@
       });
   }
 
+  const DETAIL_WIDTH_STEPS = [380, 480, 560, 660, 760, 860];
+
+  function resetDetailWidth() {
+    if (!detailEl) return;
+    detailEl.style.width = "";
+    detailEl.style.maxWidth = "";
+  }
+
+  function fitExhibDetailWidth() {
+    if (!panelEl || !detailEl || detailEl.hidden) {
+      resetDetailWidth();
+      exhibEl?.classList.remove("is-detail-open");
+      return;
+    }
+
+    const topLimit = Math.max(
+      80,
+      parseFloat(getComputedStyle(document.documentElement).fontSize) * 5.25
+    );
+    const viewportBottom = window.innerHeight - 16;
+    const maxW = Math.min(860, Math.floor(window.innerWidth * 0.94));
+    const steps = DETAIL_WIDTH_STEPS.filter((w) => w <= maxW);
+    if (!steps.length || steps[steps.length - 1] < maxW) steps.push(maxW);
+
+    resetDetailWidth();
+    exhibEl?.classList.remove("is-detail-open");
+
+    for (const w of steps) {
+      detailEl.style.width = `${w}px`;
+      detailEl.style.maxWidth = "94vw";
+      const rect = panelEl.getBoundingClientRect();
+      if (rect.bottom <= viewportBottom && rect.top >= topLimit) return;
+    }
+
+    exhibEl?.classList.add("is-detail-open");
+    if (exhibEl) exhibEl.scrollTop = 0;
+  }
+
   function hideDetail() {
     activeShowId = null;
     if (detailEl) detailEl.hidden = true;
+    exhibEl?.classList.remove("is-detail-open");
     clearActiveDays();
+    resetDetailWidth();
+    if (exhibEl) exhibEl.scrollTop = 0;
   }
 
   function showDetail(showId, cell) {
@@ -248,6 +291,9 @@
     detailMeta.textContent = `${formatShowDate(show)} · ${show.venue}`;
     detailBody.textContent = show.detail;
     detailEl.hidden = false;
+    requestAnimationFrame(() => {
+      fitExhibDetailWidth();
+    });
   }
 
   function toggleShow(showId, cell) {
@@ -379,6 +425,14 @@
     }, { passive: true });
 
     if (isShowsInView()) setShowsVisible(true);
+
+    window.addEventListener(
+      "resize",
+      () => {
+        if (detailEl && !detailEl.hidden) fitExhibDetailWidth();
+      },
+      { passive: true }
+    );
   }
 
   function warmExhibitionsVideo() {

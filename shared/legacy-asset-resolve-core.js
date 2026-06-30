@@ -9,7 +9,8 @@ export function createLegacyAssetResolver(galleryItems = []) {
 
   const ASSAM_BLAGE_ALIASES = {
     "Apples.png": "Apples-mobile.png",
-    "cfg.png": "cfg.jpg",
+    "cfg.png": "cfg-mobile.png",
+    "cfg.jpg": "cfg-mobile.png",
     "fg.png": "fg.jpg",
     "hjjjj copy.png": "hjjjj copy.jpg",
   };

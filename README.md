@@ -4,12 +4,9 @@ Artist website for Terence Ntsako Maluleke — digital artist and painter.
 
 ## Live
 
-- **v2 (active):** https://maluleke.art
-- **v1 (stable):** https://terence-maluleke.vercel.app
+https://maluleke.art
 
 ## Local preview
-
-From the v2 folder:
 
 ```bash
 npm run dev
@@ -26,4 +23,6 @@ python3 -m http.server 5501 --bind 0.0.0.0
 
 ## Structure
 
-Single-page site with vertical scroll sections: Home, Info, Gallery, Assamblage, Study, Calendar.
+Single-page site with vertical scroll sections: Home, Info, Paintings, Prints, Assamblage, Study, Calendar.
+
+CMS: Sanity Studio in `studio/` (https://terence-art.sanity.studio).

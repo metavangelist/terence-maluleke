@@ -42,12 +42,20 @@
   let lastIndexPageCount = 0;
 
   const ASSET_BASE = "assets/maquettes";
-  const CACHE = "?v=20260628f";
+  const CACHE = "?v=20260630a";
   const ENQUIRY_EMAIL = "Contact@maluleke.art";
   const MAQ_MOBILE_FILES = {
     "Apples.png": "Apples-mobile.png",
     "fg.png": "fg-mobile.png",
     "hjjjj copy.png": "hjjjj copy-mobile.png",
+  };
+  /** Desktop / CMS legacy filenames that map to files actually on disk. */
+  const MAQ_FILE_ALIASES = {
+    "Apples.png": "Apples-mobile.png",
+    "cfg.png": "cfg-mobile.png",
+    "cfg.jpg": "cfg-mobile.png",
+    "fg.png": "fg.jpg",
+    "hjjjj copy.png": "hjjjj copy.jpg",
   };
 
   let currentIndex = 0;
@@ -117,6 +125,12 @@
   const MAQ_NAV_CONTENT_GAP = 10;
   const MAQ_SCREEN_EDGE_GAP = 10;
 
+  function isMaqContentPixel(r, g, b, a) {
+    if (a < 12) return false;
+    if (r > 232 && g > 232 && b > 232) return false;
+    return true;
+  }
+
   function measureMaqImageContentBounds(img) {
     const key = img.currentSrc || img.src;
     if (MAQ_CONTENT_BOUNDS_CACHE.has(key)) {
@@ -137,8 +151,13 @@
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return null;
 
-    ctx.drawImage(img, 0, 0, sw, sh);
-    const data = ctx.getImageData(0, 0, sw, sh).data;
+    let data;
+    try {
+      ctx.drawImage(img, 0, 0, sw, sh);
+      data = ctx.getImageData(0, 0, sw, sh).data;
+    } catch {
+      return null;
+    }
 
     let minX = sw;
     let minY = sh;
@@ -147,8 +166,8 @@
 
     for (let y = 0; y < sh; y += 1) {
       for (let x = 0; x < sw; x += 1) {
-        const alpha = data[(y * sw + x) * 4 + 3];
-        if (alpha > 8) {
+        const i = (y * sw + x) * 4;
+        if (isMaqContentPixel(data[i], data[i + 1], data[i + 2], data[i + 3])) {
           if (x < minX) minX = x;
           if (y < minY) minY = y;
           if (x > maxX) maxX = x;
@@ -341,6 +360,9 @@
     if (isMaquettesMobileView() && MAQ_MOBILE_FILES[file]) {
       return MAQ_MOBILE_FILES[file];
     }
+    if (MAQ_FILE_ALIASES[file]) {
+      return MAQ_FILE_ALIASES[file];
+    }
     return file;
   }
 
@@ -393,7 +415,7 @@
       const applyTarget = () => {
         if (Number(frame.dataset.artIndex) !== index) return;
         if (!frame.classList.contains("is-active")) return;
-        img.src = targetSrc;
+        applyMaquetteImageSrc(img, targetSrc);
         if (viewMode === "detail") scheduleFitViewport();
       };
 
@@ -404,9 +426,9 @@
       }
 
       if (gridSrc && gridSrc !== window.location.href) {
-        img.src = gridSrc;
+        applyMaquetteImageSrc(img, gridSrc);
       } else {
-        img.src = targetSrc;
+        applyMaquetteImageSrc(img, targetSrc);
       }
     });
   }
@@ -587,12 +609,35 @@
     return `mailto:${ENQUIRY_EMAIL}?subject=${subject}&body=${body}`;
   }
 
+  function shouldUseLocalAssamblageAsset(item) {
+    const file = item?.file;
+    if (!file) return false;
+    if (/^cfg(-mobile)?\.(png|jpe?g)$/i.test(file)) return true;
+    if (MAQ_FILE_ALIASES[file]) return true;
+    if (file.endsWith("-mobile.png")) return true;
+    return false;
+  }
+
+  function applyMaquetteImageSrc(img, src) {
+    if (!img || !src) return;
+    if (String(src).includes("cdn.sanity.io/")) {
+      img.crossOrigin = "anonymous";
+    } else {
+      img.removeAttribute("crossorigin");
+    }
+    if (img.src !== src) img.src = src;
+  }
+
   function itemPreviewSrc(item) {
-    return item?.remotePreviewSrc || assetSrc(item.file);
+    const local = assetSrc(item.file);
+    if (shouldUseLocalAssamblageAsset(item)) return local;
+    return item?.remotePreviewSrc || local;
   }
 
   function itemViewSrc(item) {
-    return item?.remoteViewSrc || assetSrc(item.file);
+    const local = assetSrc(item.file);
+    if (shouldUseLocalAssamblageAsset(item)) return local;
+    return item?.remoteViewSrc || local;
   }
 
   function getMaquettesIndexScroller() {
@@ -854,6 +899,7 @@
 
     const preview = itemPreviewSrc(item);
     const view = itemViewSrc(item);
+    const crossAttr = view.includes("cdn.sanity.io/") ? ' crossorigin="anonymous"' : "";
     return `
       <figure class="gallery-rico__frame${isActive ? " is-active" : ""}" data-art-index="${index}" aria-hidden="${isActive ? "false" : "true"}">
         <img
@@ -865,7 +911,7 @@
           alt="${escapeHtml(item.title)}"
           loading="${index === 0 ? "eager" : "lazy"}"
           decoding="async"
-          draggable="false"
+          draggable="false"${crossAttr}
         />
       </figure>
     `;
@@ -1700,7 +1746,6 @@
 
     function prepSectionHandoff(targetSlug) {
       if (targetSlug === "prints") window.printsRefreshScrollFx?.();
-      if (targetSlug === "study") window.studyRefreshScrollFx?.();
     }
 
     function doGridHandoff(targetSlug) {
@@ -1939,8 +1984,6 @@
     initMaquettesImmersiveTap();
 
     window.maquettesShowGrid = showGrid;
-    window.maquettesOpenDetail = openDetail;
-    window.maquettesGoToIndex = goToIndex;
     window.maquettesIsImmersive = () => maquettesImmersive;
     window.maquettesSetImmersive = setMaquettesImmersive;
     window.maquettesRefreshScrollFx = () => {

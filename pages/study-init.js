@@ -234,10 +234,6 @@
 
     window.playGalleryClusterVideo = syncClusterVisibility;
     window.pauseGalleryClusterVideo = syncClusterVisibility;
-    window.playGalleryCrossVideo = syncClusterVisibility;
-    window.pauseGalleryCrossVideo = syncClusterVisibility;
-    window.playPrintsCrossVideo = syncClusterVisibility;
-    window.pausePrintsCrossVideo = syncClusterVisibility;
 
     video.load();
     syncClusterVisibility();

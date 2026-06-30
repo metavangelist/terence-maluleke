@@ -67,10 +67,6 @@ function afterFairDiptychSecondaryIndex() {
   return pairUtils().findDiptychSecondaryIndex?.(catalog) ?? -1;
 }
 
-function isStackedPairItem(item) {
-  return pairUtils().isStackedPairItem?.(item) ?? false;
-}
-
 function getStackedPairPanels(item) {
   return pairUtils().getStackedPairPanels?.(item, catalog) || null;
 }
@@ -2733,7 +2729,6 @@ async function initPrints() {
   forceGalleryInternalScroll();
 
   window.printsCatalogReady = true;
-  window.printsRebuildPages = rebuildGalleryLayout;
 
   window.printsPreload = {
     previewSrc,
@@ -2752,7 +2747,6 @@ async function initPrints() {
   window.ensurePrintsIndexScrollReady = ensurePrintsIndexScrollReady;
   window.markPrintsSectionEntered = markPrintsSectionEntered;
   window.printsShowGrid = showGalleryGrid;
-  window.printsOpenDetail = openGalleryDetail;
   window.printsIsImmersive = () => galleryImmersive;
   window.printsSetImmersive = setGalleryImmersive;
 

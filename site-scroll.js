@@ -408,9 +408,7 @@
       if (galleryExit) {
         event.stopImmediatePropagation();
         event.preventDefault();
-        if (typeof window.maquettesViewer?.isOpen === "function" && window.maquettesViewer.isOpen()) {
-          window.maquettesViewer.close();
-        } else if (
+        if (
           document.getElementById("galleryLayout")?.dataset.mode === "detail" &&
           window.galleryIsImmersive?.()
         ) {

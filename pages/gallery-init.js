@@ -66,10 +66,6 @@ function afterFairDiptychSecondaryIndex() {
   return pairUtils().findDiptychSecondaryIndex?.(catalog) ?? -1;
 }
 
-function isStackedPairItem(item) {
-  return pairUtils().isStackedPairItem?.(item) ?? false;
-}
-
 function getStackedPairPanels(item) {
   return pairUtils().getStackedPairPanels?.(item, catalog) || null;
 }
@@ -1413,7 +1409,6 @@ function initGalleryPageNav() {
 
   window.galleryGoToIndex = goToIndex;
   window.galleryEnqueueStep = enqueueStep;
-  window.gallerySyncQueueToTarget = syncQueueToTarget;
   scheduleGallerySync = () => {
     updateGalleryDisplay(currentGalleryIndex);
   };
@@ -2734,7 +2729,6 @@ async function initGallery() {
   forceGalleryInternalScroll();
 
   window.galleryCatalogReady = true;
-  window.galleryRebuildPages = rebuildGalleryLayout;
 
   window.galleryPreload = {
     previewSrc,
@@ -2753,7 +2747,6 @@ async function initGallery() {
   window.ensureGalleryIndexScrollReady = ensureGalleryIndexScrollReady;
   window.markGallerySectionEntered = markGallerySectionEntered;
   window.galleryShowGrid = showGalleryGrid;
-  window.galleryOpenDetail = openGalleryDetail;
   window.galleryIsImmersive = () => galleryImmersive;
   window.gallerySetImmersive = setGalleryImmersive;
   window.resetEnquiryContact = resetEnquiryContact;
@@ -2781,10 +2774,6 @@ async function initGallery() {
 
   if (document.body?.dataset.currentSection === "paintings") {
     markGallerySectionEntered();
-  }
-
-  if (window.infoGalleryTransition?.measure) {
-    window.infoGalleryTransition.measure();
   }
 
   if (window.siteScroll?.refresh) {

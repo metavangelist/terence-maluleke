@@ -4,10 +4,11 @@
     "index.html": "home",
     "info.html": "info",
     "gallery.html": "paintings",
-    "maquettes.html": "home",
+    "maquettes.html": "maquettes",
     "shows.html": "shows",
     "archives.html": "home",
     "study.html": "study",
+    "spotify.html": "study",
   };
   const slug = map[path] || "home";
   const hash = slug === "home" ? "" : `#${slug}`;
