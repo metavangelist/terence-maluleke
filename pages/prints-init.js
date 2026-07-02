@@ -436,6 +436,10 @@ function itemViewSrc(item) {
 function sanitySizedImageUrl(url, width) {
   if (!url || !String(url).includes("cdn.sanity.io/")) return url;
   const base = String(url).split("?")[0];
+  const isPng = base.toLowerCase().endsWith(".png");
+  if (isPng) {
+    return `${base}?w=${width}&fm=png&q=90`;
+  }
   return `${base}?w=${width}&auto=format&q=82`;
 }
 

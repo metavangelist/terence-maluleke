@@ -42,7 +42,7 @@
   let lastIndexPageCount = 0;
 
   const ASSET_BASE = "assets/maquettes";
-  const CACHE = "?v=20260630a";
+  const CACHE = "?v=20260703a";
   const ENQUIRY_EMAIL = "Contact@maluleke.art";
   const MAQ_MOBILE_FILES = {
     "Apples.png": "Apples-mobile.png",
@@ -55,7 +55,8 @@
     "cfg.png": "cfg-mobile.png",
     "cfg.jpg": "cfg-mobile.png",
     "fg.png": "fg.jpg",
-    "hjjjj copy.png": "hjjjj copy.jpg",
+    "hjjjj copy.png": "hjjjj copy-mobile.png",
+    "hjjjj copy.jpg": "hjjjj copy-mobile.png",
   };
 
   let currentIndex = 0;
@@ -544,6 +545,10 @@
   function sanitySizedImageUrl(url, width) {
     if (!url || !String(url).includes("cdn.sanity.io/")) return url;
     const base = String(url).split("?")[0];
+    const isPng = base.toLowerCase().endsWith(".png");
+    if (isPng) {
+      return `${base}?w=${width}&fm=png&q=90`;
+    }
     return `${base}?w=${width}&auto=format&q=82`;
   }
 
