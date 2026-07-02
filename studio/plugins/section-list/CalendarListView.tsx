@@ -60,7 +60,7 @@ const EventActions = styled.div`
 function formatEventDate(startDate?: string, endDate?: string) {
   if (!startDate) return "—";
   const start = new Date(`${startDate}T12:00:00`);
-  if (!endDate) {
+  if (!endDate || endDate === startDate) {
     return start.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   }
   const end = new Date(`${endDate}T12:00:00`);

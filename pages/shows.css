@@ -27,12 +27,26 @@
 
 #section-calendar .exhib.is-detail-open {
   align-items: flex-start;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) 1rem
-    max(1.5rem, env(safe-area-inset-bottom, 0px));
+  justify-content: center;
+  overflow: hidden;
+  padding: max(4.25rem, calc(env(safe-area-inset-top, 0px) + 2.25rem)) 1rem
+    max(0.75rem, env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
+}
+
+#section-calendar .exhib.is-detail-open .exhib-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(380px, 92vw);
+  max-height: calc(
+    100dvh - max(4.25rem, calc(env(safe-area-inset-top, 0px) + 2.25rem)) -
+      max(0.75rem, env(safe-area-inset-bottom, 0px))
+  );
+  min-height: 0;
+}
+
+#section-calendar .exhib.is-detail-open .exhib-cal {
+  flex: 0 0 auto;
 }
 
 #section-calendar .exhib-bg {
@@ -262,12 +276,33 @@
   border-top: 0;
   text-align: center;
   color: var(--exhib-cal-ink);
-  position: relative;
-  left: 50%;
-  width: min(380px, 92vw);
-  max-width: 94vw;
+  width: 100%;
   box-sizing: border-box;
-  transform: translateX(-50%);
+}
+
+#section-calendar .exhib.is-detail-open .exhib-detail {
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0.85rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+#section-calendar .exhib.is-detail-open .exhib-detail::-webkit-scrollbar {
+  width: 3px;
+}
+
+#section-calendar .exhib.is-detail-open .exhib-detail::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
 }
 
 #section-calendar .exhib-detail[hidden] {
@@ -303,32 +338,19 @@
   opacity: 0.95;
 }
 
+body.is-exhib-detail-open .site-scroller {
+  overflow: hidden;
+}
+
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
   :root {
     --exhib-day-size: 28px;
-  }
-
-  #section-calendar .exhib:has(.exhib-detail:not([hidden])) {
-    align-items: flex-start;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) 1rem
-      max(1.5rem, env(safe-area-inset-bottom, 0px));
-    box-sizing: border-box;
   }
 
   #section-calendar .exhib-cal::before {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: rgba(28, 28, 28, 0.9);
-  }
-
-  #section-calendar .exhib-detail:not([hidden]) {
-    left: auto;
-    transform: none;
-    width: 100%;
-    max-width: 100%;
   }
 
   #section-calendar .exhib-cal__day {

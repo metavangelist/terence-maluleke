@@ -84,7 +84,7 @@ export const exhibition = defineType({
       let formatted = null;
       if (eventDate) {
         const start = new Date(`${eventDate}T12:00:00`);
-        if (endDate) {
+        if (endDate && endDate !== eventDate) {
           const end = new Date(`${endDate}T12:00:00`);
           const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
           const sameYear = start.getFullYear() === end.getFullYear();

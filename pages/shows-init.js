@@ -34,7 +34,6 @@
 
   const section = document.getElementById("section-calendar");
   const exhibEl = section?.querySelector(".exhib");
-  const panelEl = section?.querySelector(".exhib-panel");
   const weeksEl = document.getElementById("exhibCalWeeks");
   const monthLabel = document.getElementById("exhibMonthLabel");
   const detailEl = document.getElementById("exhibDetail");
@@ -118,12 +117,18 @@
 
   function formatShowDate(show) {
     const start = new Date(show.year, show.month - 1, show.day);
-    
-    if (show.endDay && show.endMonth && show.endYear) {
+    const hasEnd = show.endDay && show.endMonth && show.endYear;
+    const sameDay =
+      hasEnd &&
+      show.day === show.endDay &&
+      show.month === show.endMonth &&
+      show.year === show.endYear;
+
+    if (hasEnd && !sameDay) {
       const end = new Date(show.endYear, show.endMonth - 1, show.endDay);
       const sameMonth = show.month === show.endMonth && show.year === show.endYear;
       const sameYear = show.year === show.endYear;
-      
+
       if (sameMonth) {
         return `${show.day} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`;
       } else if (sameYear) {
@@ -132,7 +137,7 @@
         return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`;
       }
     }
-    
+
     return start.toLocaleDateString("en-GB", {
       day: "numeric",
       month: "long",
@@ -259,7 +264,11 @@
       });
   }
 
-  const DETAIL_WIDTH_STEPS = [380, 480, 560, 660, 760, 860];
+  function setDetailOpen(open) {
+    document.body.classList.toggle("is-exhib-detail-open", open);
+    exhibEl?.classList.toggle("is-detail-open", open);
+    if (!open && exhibEl) exhibEl.scrollTop = 0;
+  }
 
   function resetDetailWidth() {
     if (!detailEl) return;
@@ -267,54 +276,24 @@
     detailEl.style.maxWidth = "";
   }
 
-  function isMobileCalendarView() {
-    return (
-      window.innerWidth <= 768 ||
-      window.matchMedia("(hover: none) and (pointer: coarse)").matches
-    );
-  }
-
-  function fitExhibDetailWidth() {
-    if (!panelEl || !detailEl || detailEl.hidden) {
+  function fitExhibDetailLayout() {
+    if (!detailEl || detailEl.hidden) {
+      setDetailOpen(false);
       resetDetailWidth();
-      exhibEl?.classList.remove("is-detail-open");
       return;
     }
 
     resetDetailWidth();
-    exhibEl?.classList.remove("is-detail-open");
-
-    if (isMobileCalendarView()) {
-      return;
-    }
-
-    const topLimit = Math.max(
-      80,
-      parseFloat(getComputedStyle(document.documentElement).fontSize) * 5.25
-    );
-    const viewportBottom = window.innerHeight - 16;
-    const maxW = Math.min(860, Math.floor(window.innerWidth * 0.94));
-    const steps = DETAIL_WIDTH_STEPS.filter((w) => w <= maxW);
-    if (!steps.length || steps[steps.length - 1] < maxW) steps.push(maxW);
-
-    for (const w of steps) {
-      detailEl.style.width = `${w}px`;
-      detailEl.style.maxWidth = "94vw";
-      const rect = panelEl.getBoundingClientRect();
-      if (rect.bottom <= viewportBottom && rect.top >= topLimit) return;
-    }
-
-    exhibEl?.classList.add("is-detail-open");
-    if (exhibEl) exhibEl.scrollTop = 0;
+    setDetailOpen(true);
+    detailEl.scrollTop = 0;
   }
 
   function hideDetail() {
     activeShowId = null;
     if (detailEl) detailEl.hidden = true;
-    exhibEl?.classList.remove("is-detail-open");
+    setDetailOpen(false);
     clearActiveDays();
     resetDetailWidth();
-    if (exhibEl) exhibEl.scrollTop = 0;
   }
 
   function showDetail(showId, cell) {
@@ -332,7 +311,7 @@
     detailBody.textContent = show.detail;
     detailEl.hidden = false;
     requestAnimationFrame(() => {
-      fitExhibDetailWidth();
+      fitExhibDetailLayout();
     });
   }
 
@@ -469,10 +448,35 @@
     window.addEventListener(
       "resize",
       () => {
-        if (detailEl && !detailEl.hidden) fitExhibDetailWidth();
+        if (detailEl && !detailEl.hidden) fitExhibDetailLayout();
       },
       { passive: true }
     );
+
+    if (detailEl) {
+      detailEl.addEventListener(
+        "wheel",
+        (event) => {
+          if (detailEl.hidden) return;
+          const { scrollTop, scrollHeight, clientHeight } = detailEl;
+          const atTop = scrollTop <= 0;
+          const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+          if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
+            event.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+
+      detailEl.addEventListener(
+        "touchmove",
+        (event) => {
+          if (detailEl.hidden) return;
+          event.stopPropagation();
+        },
+        { passive: true }
+      );
+    }
   }
 
   function warmExhibitionsVideo() {
