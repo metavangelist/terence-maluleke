@@ -27,16 +27,12 @@
 
 #section-calendar .exhib.is-detail-open {
   align-items: flex-start;
-  overflow-x: visible;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) 1rem
     max(1.5rem, env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
-}
-
-#section-calendar .exhib:has(.exhib-detail:not([hidden])) {
-  overflow-x: visible;
 }
 
 #section-calendar .exhib-bg {
@@ -83,7 +79,6 @@
   background: transparent;
   font-family: "Helvetica Neue", Arial, sans-serif;
   color: var(--exhib-cal-ink);
-  transform: translateZ(0);
   overflow: visible;
 }
 
@@ -96,6 +91,8 @@
   width: 100%;
   background: transparent;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 #section-calendar .exhib-cal::before {
@@ -113,6 +110,8 @@
 #section-calendar .exhib-cal > * {
   position: relative;
   z-index: 1;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 #section-calendar .exhib-cal__month {
@@ -249,6 +248,8 @@
 
 #section-calendar .exhib-cal__day--show.is-active .exhib-cal__marker--show {
   color: #121212;
+  background: #ffffff;
+  border-radius: 50%;
 }
 
 #section-calendar .exhib-cal__day--show.is-active .exhib-cal__marker--show .exhib-cal__show-dot {
@@ -302,9 +303,32 @@
   opacity: 0.95;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
   :root {
     --exhib-day-size: 28px;
+  }
+
+  #section-calendar .exhib:has(.exhib-detail:not([hidden])) {
+    align-items: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: max(5.25rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) 1rem
+      max(1.5rem, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  #section-calendar .exhib-cal::before {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(28, 28, 28, 0.9);
+  }
+
+  #section-calendar .exhib-detail:not([hidden]) {
+    left: auto;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
   }
 
   #section-calendar .exhib-cal__day {

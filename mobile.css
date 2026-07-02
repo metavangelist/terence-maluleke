@@ -80,7 +80,7 @@ a.anon__list-item {
     font-size: clamp(9px, 2.5vw, 10px);
   }
 
-  .blob__content-inner .anon__foot {
+  .blob__content-pos .anon__foot {
     align-items: center;
     text-align: center;
     justify-content: center;

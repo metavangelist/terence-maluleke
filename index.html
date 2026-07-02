@@ -78,13 +78,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&family=Pinyon+Script&family=Roboto:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260679" />
+  <link rel="stylesheet" href="styles.css?v=20260712f" />
   <link rel="stylesheet" href="mobile.css?v=20260617v1" />
   <link rel="stylesheet" href="site-nav.css?v=20260628i" />
   <link rel="stylesheet" href="pages/info.css?v=20260607" />
   <link rel="stylesheet" href="pages/gallery.css?v=20260629a" />
   <link rel="stylesheet" href="site-scroll.css?v=20260628b" />
-  <link rel="stylesheet" href="pages/shows.css?v=20260630" />
+  <link rel="stylesheet" href="pages/shows.css?v=20260701" />
   <link rel="stylesheet" href="pages/study.css?v=20260628d" />
   <link rel="stylesheet" href="site-loader.css?v=20260678" />
   <link rel="stylesheet" href="image-protection.css?v=20260628g" />
@@ -145,37 +145,35 @@
                 draggable="false"
               />
             </div>
-            <div class="blob__content" id="blobContent" aria-hidden="true">
-              <div class="blob__content-pos" id="blobContentPos">
-                <div class="blob__content-inner" id="blobContentInner">
-                <header class="anon__brand">
-                  <span class="anon__brand-strong">ARTIST</span>
-                </header>
-                <div class="anon__hero">
-                  <h1 class="anon__title">
-                    <span class="anon__title-word anon__title-word--terence">Terence</span>
-                    <span class="anon__title-word anon__title-word--ntsako">Ntsako</span>
-                    <span class="anon__title-word anon__title-word--maluleke">Maluleke</span>
-                  </h1>
-                  <p class="anon__tagline">Soweto · Johannesburg · South Africa</p>
-                </div>
-                <div class="anon__stage">
-                  <nav class="anon__list" aria-hidden="true">
-                    <a class="anon__list-item" href="#info"       data-scroll-section="info"><span class="anon__list-name">Info</span></a>
-                    <a class="anon__list-item" href="#paintings"  data-scroll-section="paintings"><span class="anon__list-name">Paintings</span></a>
-                    <a class="anon__list-item" href="#prints"     data-scroll-section="prints"><span class="anon__list-name">Prints</span></a>
-                    <a class="anon__list-item" href="#maquettes"  data-scroll-section="maquettes"><span class="anon__list-name">Assamblage</span></a>
-                    <a class="anon__list-item" href="#study"      data-scroll-section="study"><span class="anon__list-name">Study</span></a>
-                    <a class="anon__list-item" href="#calendar"   data-scroll-section="calendar"><span class="anon__list-name">Calendar</span></a>
-                  </nav>
-                </div>
-                <footer class="anon__foot">
-                  <p class="anon__clock" id="blobClock"></p>
-                </footer>
-                </div>
-              </div>
-            </div>
           </div>
+        </div>
+        <div class="blob__content" id="blobContent" aria-hidden="true">
+            <div class="blob__content-pos" id="blobContentPos">
+              <header class="anon__brand">
+                <span class="anon__brand-strong">ARTIST</span>
+              </header>
+              <div class="anon__hero">
+                <h1 class="anon__title">
+                  <span class="anon__title-word anon__title-word--terence">Terence</span>
+                  <span class="anon__title-word anon__title-word--ntsako">Ntsako</span>
+                  <span class="anon__title-word anon__title-word--maluleke">Maluleke</span>
+                </h1>
+                <p class="anon__tagline">Soweto · Johannesburg · South Africa</p>
+              </div>
+              <div class="anon__stage">
+                <nav class="anon__list" aria-hidden="true">
+                  <a class="anon__list-item" href="#info"       data-scroll-section="info"><span class="anon__list-name">Info</span></a>
+                  <a class="anon__list-item" href="#paintings"  data-scroll-section="paintings"><span class="anon__list-name">Paintings</span></a>
+                  <a class="anon__list-item" href="#prints"     data-scroll-section="prints"><span class="anon__list-name">Prints</span></a>
+                  <a class="anon__list-item" href="#maquettes"  data-scroll-section="maquettes"><span class="anon__list-name">Assamblage</span></a>
+                  <a class="anon__list-item" href="#study"      data-scroll-section="study"><span class="anon__list-name">Study</span></a>
+                  <a class="anon__list-item" href="#calendar"   data-scroll-section="calendar"><span class="anon__list-name">Calendar</span></a>
+                </nav>
+              </div>
+              <footer class="anon__foot">
+                <p class="anon__clock" id="blobClock"></p>
+              </footer>
+            </div>
         </div>
       </div>
 
@@ -430,21 +428,22 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-  <script src="home-bubble.js?v=20260635"></script>
+  <script src="home-bubble.js?v=20260712f"></script>
   <script src="pages/home-init.js"></script>
   <script src="pages/gallery-pair-utils.js?v=20260629a"></script>
   <script src="shared/gallery-grid-layout.js?v=20260629b"></script>
   <script src="shared/image-preload-cache.js?v=20260628"></script>
   <script src="pages/sanity-config.js?v=20260629b"></script>
-  <script src="pages/sanity-client.js?v=20260629c"></script>
+  <script src="pages/sanity-client.js?v=20260704"></script>
+  <script src="pages/home-bubble-art.js?v=20260703"></script>
   <script src="pages/info-init.js?v=20260623a"></script>
   <script src="pages/analytics-init.js?v=20260617d"></script>
   <script src="pages/gallery-init.js?v=20260629c"></script>
-  <script src="pages/shows-init.js?v=20260630"></script>
+  <script src="pages/shows-init.js?v=20260701"></script>
   <script src="pages/study-init.js?v=20260628e"></script>
   <script src="pages/prints-init.js?v=20260629c"></script>
   <script src="pages/maquettes-init.js?v=20260630a"></script>
-  <script src="site-loader.js?v=20260628b"></script>
+  <script src="site-loader.js?v=20260702"></script>
   <script src="site-scroll.js?v=20260629d"></script>
   <script src="image-protection.js?v=20260617b"></script>
 </body>

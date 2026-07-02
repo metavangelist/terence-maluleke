@@ -45,6 +45,7 @@ body.home-anon {
   pointer-events: none;
   will-change: transform;
   transform: translateZ(0);
+  overflow: visible;
 }
 
 .blob.blob--pending {
@@ -58,13 +59,15 @@ body.home-anon {
   transition: opacity 0.35s ease;
 }
 
-/* Pulse wrapper: GSAP scales this so the blob can expand without distorting text. */
+/* Pulse scales the whole lava-lamp shape; text layer stays a sibling outside pulse. */
 .blob__pulse {
   position: absolute;
   inset: 0;
+  z-index: 0;
   transform-origin: center center;
 }
 
+/* Clip frame: morphing border, painting inside; grows with pulse. */
 .blob__shape {
   position: absolute;
   inset: 0;
@@ -170,7 +173,7 @@ body.home-anon {
   object-position: 52% 42%;
 }
 
-/* Text content inside blob (white type over the painting) */
+/* Text clip grows with pulse; same organic mask as the shape. */
 .blob__content {
   position: absolute;
   inset: 0;
@@ -179,24 +182,16 @@ body.home-anon {
   height: 100%;
   pointer-events: none;
   overflow: hidden;
+  transform-origin: center center;
+  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  animation: blob-morph 32s ease-in-out infinite;
 }
 
-/* Positioning layer: GSAP translates this so the masked text lines up
-   exactly with the page text. Only translate lives here. */
+/* Ghost grid mirrors .anon — explicit copy, not the .anon class (100dvh breaks inside blob). */
 .blob__content-pos {
   position: absolute;
   left: 0;
   top: 0;
-}
-
-/* Inner content: GSAP counter-scales against the pulse so the text stays the
-   same visual size as the page text. */
-.blob__content-inner {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
   margin: 0;
   box-sizing: border-box;
   padding:
@@ -208,22 +203,11 @@ body.home-anon {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 0;
   overflow: visible;
-  color: #ffffff;
-  text-shadow: none;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
+  pointer-events: none;
 }
 
 .blob__content .anon__brand,
 .blob__content .anon__brand-strong {
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
-.blob__content .anon__brand-light,
-.blob__content .anon__brand-rule {
-  font-weight: 600;
   color: #ffffff !important;
   text-shadow: none;
 }
@@ -233,20 +217,14 @@ body.home-anon {
 }
 
 .blob__content .anon__title,
-.blob__content .anon__title-word,
-.blob__content .anon__title-word--terence,
-.blob__content .anon__title-word--ntsako,
-.blob__content .anon__title-word--maluleke {
+.blob__content .anon__title-word {
   color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff;
   text-shadow: none;
 }
 
 .blob__content .anon__tagline {
   color: #ffffff !important;
   text-shadow: none;
-  white-space: nowrap;
-  font-family: "Helvetica Neue", Arial, sans-serif;
 }
 
 .blob__content .anon__list-item,
@@ -255,58 +233,14 @@ body.home-anon {
   text-shadow: none;
 }
 
-/* Ghost stage mirrors the real .anon__stage layout */
-.blob__content .anon__stage {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  align-self: stretch;
-  width: 100%;
-  min-height: 0;
-  margin-top: clamp(4px, 1vh, 12px);
-  overflow: hidden;
-}
-
-.blob__content .anon__list {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: end;
-  align-content: end;
-  width: 100%;
-  gap: 0.237em;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-  text-align: right;
-}
-
-.blob__content .anon__list-item {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  margin: 0;
-  color: #ffffff !important;
-  text-decoration: none;
-  font-size: clamp(12px, 1.35vw, 15px);
-  line-height: 1.2;
-  text-align: right;
-  pointer-events: none;
-}
-
-.blob__content .anon__list-name {
-  display: inline-block;
-  text-align: right;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
 .blob__content .anon__clock {
   color: #ffffff !important;
   text-shadow: none;
+}
+
+.blob__content a.anon__list-item {
+  pointer-events: none;
+  cursor: default;
 }
 
 /* ==========================================================================

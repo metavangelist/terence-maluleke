@@ -15,7 +15,6 @@
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const blobPulse = blob.querySelector(".blob__pulse");
   const blobContentPos = blobContent.querySelector(".blob__content-pos");
-  const blobInner = blobContent.querySelector(".blob__content-inner");
   const homeSection = document.getElementById("section-home");
   const anonSection = homeSection?.querySelector(".anon");
 
@@ -30,12 +29,13 @@
 
   const setPaintX = gsap.quickSetter(blobPainting, "x", "px");
   const setPaintY = gsap.quickSetter(blobPainting, "y", "px");
-  const setInnerX = blobContentPos ? gsap.quickSetter(blobContentPos, "x", "px") : null;
-  const setInnerY = blobContentPos ? gsap.quickSetter(blobContentPos, "y", "px") : null;
 
   gsap.set(blobPainting, { x: 0, y: 0, force3D: true });
-  if (blobContentPos) gsap.set(blobContentPos, { x: 0, y: 0, force3D: true });
   gsap.set(blob, { x: 0, y: 0, force3D: true });
+  gsap.set(blobContent, { scale: 1, transformOrigin: "50% 50%", force3D: true });
+  if (blobContentPos) {
+    gsap.set(blobContentPos, { x: 0, y: 0, scaleX: 1, scaleY: 1, force3D: true });
+  }
 
   function rand(min, max) {
     if (max <= min) return min;
@@ -51,6 +51,12 @@
     return Number.isFinite(cssW) && cssW > 0 ? cssW : 160;
   }
 
+  function getPulseScale() {
+    if (!blobPulse) return 1;
+    const scale = gsap.getProperty(blobPulse, "scale");
+    return typeof scale === "number" && scale > 0 ? scale : 1;
+  }
+
   function isHomeVisible() {
     if (!homeSection) return false;
 
@@ -63,7 +69,7 @@
     return rect.top < root.bottom && rect.bottom > root.top;
   }
 
-  function applyInnerSizing() {
+  function applyContentSizing() {
     if (!blobContentPos || !layoutCache) return;
     blobContentPos.style.width = `${layoutPx(layoutCache.anonWidth)}px`;
     blobContentPos.style.height = `${layoutPx(layoutCache.anonHeight)}px`;
@@ -98,7 +104,7 @@
       maxY,
     };
 
-    applyInnerSizing();
+    applyContentSizing();
     return layoutCache;
   }
 
@@ -127,41 +133,60 @@
     };
   }
 
-  function getPulseScale() {
-    if (!blobPulse) return 1;
-    const scale = gsap.getProperty(blobPulse, "scale");
-    return typeof scale === "number" && scale > 0 ? scale : 1;
-  }
+  function syncGhostPosition(x, y) {
+    const layout = layoutCache;
+    if (!layout || !blobContentPos) return;
 
-  function applyCounterScale(tx, ty) {
-    if (!blobInner || !layoutCache) return;
+    lastSyncX = x;
+    lastSyncY = y;
+
     const pulseScale = getPulseScale();
-    const half = layoutCache.size / 2;
-    gsap.set(blobInner, {
+    const half = layout.size / 2;
+
+    let tx = layout.anonLeft - x;
+    let ty = layout.anonTop - y;
+
+    gsap.set(blobContent, {
+      scale: pulseScale,
+      transformOrigin: "50% 50%",
+      force3D: true,
+    });
+
+    const posX = tx / pulseScale;
+    const posY = ty / pulseScale;
+
+    gsap.set(blobContentPos, {
+      x: layoutPx(posX),
+      y: layoutPx(posY),
       scaleX: 1 / pulseScale,
       scaleY: 1 / pulseScale,
+      transformOrigin: `${layoutPx(half - posX)}px ${layoutPx(half - posY)}px`,
+      force3D: true,
+    });
+
+    const realTagline = anonSection?.querySelector(".anon__tagline");
+    const ghostTagline = blobContent.querySelector(".anon__tagline");
+    if (!realTagline || !ghostTagline) return;
+
+    const realRect = realTagline.getBoundingClientRect();
+    const ghostRect = ghostTagline.getBoundingClientRect();
+    tx = posX + (realRect.left - ghostRect.left);
+    ty = posY + (realRect.top - ghostRect.top);
+
+    gsap.set(blobContentPos, {
+      x: layoutPx(tx),
+      y: layoutPx(ty),
       transformOrigin: `${layoutPx(half - tx)}px ${layoutPx(half - ty)}px`,
       force3D: true,
     });
   }
 
   function applySync(x, y) {
-    const layout = layoutCache;
-    if (!layout) return;
-
-    lastSyncX = x;
-    lastSyncY = y;
+    if (!layoutCache) return;
 
     setPaintX(-x);
     setPaintY(-y);
-
-    if (setInnerX && setInnerY) {
-      const tx = layout.anonLeft - x;
-      const ty = layout.anonTop - y;
-      setInnerX(tx);
-      setInnerY(ty);
-      applyCounterScale(tx, ty);
-    }
+    syncGhostPosition(x, y);
   }
 
   function syncInnerContent(x, y) {
@@ -282,10 +307,7 @@
       repeat: -1,
       defaults: { ease: "power1.inOut" },
       onUpdate() {
-        if (!layoutCache) return;
-        const tx = layoutCache.anonLeft - lastSyncX;
-        const ty = layoutCache.anonTop - lastSyncY;
-        applyCounterScale(tx, ty);
+        syncGhostPosition(lastSyncX, lastSyncY);
       },
     });
 
@@ -303,7 +325,9 @@
     pulseTimeline.kill();
     pulseTimeline = null;
     if (blobPulse) gsap.set(blobPulse, { scale: 1 });
-    if (blobInner) gsap.set(blobInner, { scaleX: 1, scaleY: 1 });
+    gsap.set(blobContent, { scale: 1 });
+    if (blobContentPos) gsap.set(blobContentPos, { scaleX: 1, scaleY: 1 });
+    syncGhostPosition(lastSyncX, lastSyncY);
   }
 
   function revealBlob() {
@@ -356,6 +380,14 @@
     }
 
     document.addEventListener("site:ready", run, { once: true });
+
+    document.addEventListener(
+      "site:ready",
+      () => {
+        window.setTimeout(scheduleLayoutRefresh, 520);
+      },
+      { once: true }
+    );
 
     window.setTimeout(() => {
       if (!started) run();

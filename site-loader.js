@@ -13,6 +13,19 @@
     if (track) track.setAttribute("aria-valuenow", String(Math.round(pct)));
   }
 
+  const DEFAULT_HOME_BUBBLE = "assets/images/DSC01668_2.jpg";
+
+  async function loadHomeBubbleArt() {
+    if (!window.homeBubbleArt?.resolve) {
+      await loadImage(DEFAULT_HOME_BUBBLE);
+      return;
+    }
+
+    const art = await window.homeBubbleArt.resolve();
+    window.homeBubbleArt.applyToDom(art);
+    await loadImage(art.src);
+  }
+
   function loadImage(src) {
     if (window.ImagePreloadCache) {
       return window.ImagePreloadCache.load(src).then(() => {});
@@ -185,7 +198,7 @@
 
     const bootstrapTasks = [
       document.fonts?.ready ?? Promise.resolve(),
-      loadImage("assets/images/DSC01668_2.jpg"),
+      loadHomeBubbleArt(),
       loadImage("videos/exhibitions-bg-poster.jpg"),
       loadVideo("videos/exhibitions-bg-web.mp4"),
       loadVideo("videos/info/muse-5.mp4"),

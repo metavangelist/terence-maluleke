@@ -93,6 +93,20 @@
       ),
     fetchSiteSettings: () =>
       sanityQuery(`*[_id == "siteSettings"][0]{ siteTitle, enquiryEmail, instagramUrl }`),
+    fetchHomeBubble: () =>
+      sanityQuery(`{
+        "bubble": *[_id == "homeBubble"][0]{
+          objectPosition,
+          "imageUrl": coalesce(artwork.asset->url, defaultArtwork.asset->url),
+          "hotspot": coalesce(artwork.hotspot, defaultArtwork.hotspot),
+          "usesDefault": !defined(artwork.asset)
+        },
+        "legacy": *[_id == "siteSettings"][0]{
+          "objectPosition": homeBubbleObjectPosition,
+          "imageUrl": homeBubbleImage.asset->url,
+          "hotspot": homeBubbleImage.hotspot
+        }
+      }`),
     fetchArtistBio: () =>
       sanityQuery(`*[_id == "artistInfo"][0]{ bio }`),
   };

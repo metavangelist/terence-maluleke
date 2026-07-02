@@ -238,10 +238,24 @@
     detailEl.style.maxWidth = "";
   }
 
+  function isMobileCalendarView() {
+    return (
+      window.innerWidth <= 768 ||
+      window.matchMedia("(hover: none) and (pointer: coarse)").matches
+    );
+  }
+
   function fitExhibDetailWidth() {
     if (!panelEl || !detailEl || detailEl.hidden) {
       resetDetailWidth();
       exhibEl?.classList.remove("is-detail-open");
+      return;
+    }
+
+    resetDetailWidth();
+    exhibEl?.classList.remove("is-detail-open");
+
+    if (isMobileCalendarView()) {
       return;
     }
 
@@ -253,9 +267,6 @@
     const maxW = Math.min(860, Math.floor(window.innerWidth * 0.94));
     const steps = DETAIL_WIDTH_STEPS.filter((w) => w <= maxW);
     if (!steps.length || steps[steps.length - 1] < maxW) steps.push(maxW);
-
-    resetDetailWidth();
-    exhibEl?.classList.remove("is-detail-open");
 
     for (const w of steps) {
       detailEl.style.width = `${w}px`;
