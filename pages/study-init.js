@@ -90,6 +90,19 @@
       }
     }, { passive: true });
 
+    video.addEventListener("ended", () => {
+      if (section.classList.contains("is-visible")) {
+        video.currentTime = 0;
+        playVideo();
+      }
+    }, { passive: true });
+
+    video.addEventListener("pause", () => {
+      if (section.classList.contains("is-visible") && !document.hidden) {
+        playVideo();
+      }
+    }, { passive: true });
+
     if ("IntersectionObserver" in window) {
       const scrollRoot = document.getElementById("siteScroller");
       const observer = new IntersectionObserver(
@@ -205,6 +218,19 @@
       if (current) {
         current.dataset.failed = "true";
         video.load();
+      }
+    }, { passive: true });
+
+    video.addEventListener("ended", () => {
+      if (clusterVisible) {
+        video.currentTime = 0;
+        playVideo();
+      }
+    }, { passive: true });
+
+    video.addEventListener("pause", () => {
+      if (clusterVisible && !document.hidden) {
+        playVideo();
       }
     }, { passive: true });
 

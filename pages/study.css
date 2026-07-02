@@ -27,6 +27,14 @@
   pointer-events: none;
 }
 
+.gallery-cluster-bg .cross-video::-webkit-media-controls,
+.gallery-cluster-bg .cross-video::-webkit-media-controls-enclosure,
+.gallery-cluster-bg .cross-video::-webkit-media-controls-panel,
+.gallery-cluster-bg .cross-video::-webkit-media-controls-play-button,
+.gallery-cluster-bg .cross-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+
 .gallery-cluster-bg .cross-veil {
   position: absolute;
   inset: 0;
@@ -162,6 +170,26 @@
   object-fit: cover;
   object-position: center;
   pointer-events: none;
+}
+
+:is(#section-gallery, #section-prints, #section-study) .cross-video::-webkit-media-controls {
+  display: none !important;
+}
+
+:is(#section-gallery, #section-prints, #section-study) .cross-video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+:is(#section-gallery, #section-prints, #section-study) .cross-video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+:is(#section-gallery, #section-prints, #section-study) .cross-video::-webkit-media-controls-play-button {
+  display: none !important;
+}
+
+:is(#section-gallery, #section-prints, #section-study) .cross-video::-webkit-media-controls-start-playback-button {
+  display: none !important;
 }
 
 :is(#section-gallery, #section-prints, #section-study) .cross-veil {
