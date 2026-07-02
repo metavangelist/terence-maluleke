@@ -64,10 +64,14 @@
       if (!slug) return;
 
       const parsed = parseEventDate(row.eventDate);
+      const parsedEnd = parseEventDate(row.endDate);
       mapped[slug] = {
         day: parsed?.day ?? row.day,
         month: parsed?.month ?? row.month,
         year: parsed?.year ?? row.year,
+        endDay: parsedEnd?.day ?? null,
+        endMonth: parsedEnd?.month ?? null,
+        endYear: parsedEnd?.year ?? null,
         name: row.name,
         venue: row.venue || "",
         detail: row.detail || "",
@@ -113,19 +117,44 @@
   }
 
   function formatShowDate(show) {
-    const d = new Date(show.year, show.month - 1, show.day);
-    return d.toLocaleDateString("en-GB", {
+    const start = new Date(show.year, show.month - 1, show.day);
+    
+    if (show.endDay && show.endMonth && show.endYear) {
+      const end = new Date(show.endYear, show.endMonth - 1, show.endDay);
+      const sameMonth = show.month === show.endMonth && show.year === show.endYear;
+      const sameYear = show.year === show.endYear;
+      
+      if (sameMonth) {
+        return `${show.day} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`;
+      } else if (sameYear) {
+        return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "long" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`;
+      } else {
+        return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`;
+      }
+    }
+    
+    return start.toLocaleDateString("en-GB", {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
   }
 
+  function dateToNum(year, month, day) {
+    return year * 10000 + month * 100 + day;
+  }
+
   function showIdForDay(day, year, month) {
+    const target = dateToNum(year, month, day);
     return (
-      Object.entries(SHOWS).find(
-        ([, show]) => show.year === year && show.month === month && show.day === day
-      )?.[0] || null
+      Object.entries(SHOWS).find(([, show]) => {
+        const startNum = dateToNum(show.year, show.month, show.day);
+        if (show.endDay && show.endMonth && show.endYear) {
+          const endNum = dateToNum(show.endYear, show.endMonth, show.endDay);
+          return target >= startNum && target <= endNum;
+        }
+        return startNum === target;
+      })?.[0] || null
     );
   }
 

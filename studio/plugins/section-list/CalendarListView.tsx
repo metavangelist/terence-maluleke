@@ -22,6 +22,7 @@ const EVENTS_QUERY = `*[_type == "exhibition"] | order(eventDate asc) {
   _id,
   name,
   eventDate,
+  endDate,
   venue
 }`;
 
@@ -31,6 +32,7 @@ type ExhibitionDoc = {
   _id: string;
   name?: string;
   eventDate?: string;
+  endDate?: string;
   venue?: string;
 };
 
@@ -55,13 +57,21 @@ const EventActions = styled.div`
   flex-shrink: 0;
 `;
 
-function formatEventDate(value?: string) {
-  if (!value) return "—";
-  return new Date(`${value}T12:00:00`).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+function formatEventDate(startDate?: string, endDate?: string) {
+  if (!startDate) return "—";
+  const start = new Date(`${startDate}T12:00:00`);
+  if (!endDate) {
+    return start.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
+  const end = new Date(`${endDate}T12:00:00`);
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  const sameYear = start.getFullYear() === end.getFullYear();
+  if (sameMonth) {
+    return `${start.getDate()} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  } else if (sameYear) {
+    return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+  }
+  return `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 export function CalendarListView() {
@@ -185,7 +195,7 @@ export function CalendarListView() {
                         {doc.name || "Untitled event"}
                       </Text>
                       <Text size={1} muted>
-                        {formatEventDate(doc.eventDate)}
+                        {formatEventDate(doc.eventDate, doc.endDate)}
                       </Text>
                       <Text size={1} textOverflow="ellipsis" muted>
                         {doc.venue || "—"}

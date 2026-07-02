@@ -88,7 +88,7 @@
     fetchExhibitions: () =>
       sanityQuery(
         `*[_type == "exhibition"] | order(eventDate asc) {
-          _id, name, "slug": slug.current, eventDate, day, venue, detail, month, year
+          _id, name, "slug": slug.current, eventDate, endDate, day, venue, detail, month, year
         }`
       ),
     fetchSiteSettings: () =>

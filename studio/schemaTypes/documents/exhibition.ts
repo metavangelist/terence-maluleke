@@ -21,10 +21,16 @@ export const exhibition = defineType({
     }),
     defineField({
       name: "eventDate",
-      title: "Event date",
+      title: "Start date",
       type: "date",
-      description: "The date this event appears on the calendar.",
+      description: "The first day of the event.",
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "endDate",
+      title: "End date",
+      type: "date",
+      description: "The last day of the event (leave empty for single-day events).",
     }),
     defineField({
       name: "venue",
@@ -71,16 +77,28 @@ export const exhibition = defineType({
     select: {
       name: "name",
       eventDate: "eventDate",
+      endDate: "endDate",
       venue: "venue",
     },
-    prepare({ name, eventDate, venue }) {
-      const formatted = eventDate
-        ? new Date(`${eventDate}T12:00:00`).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })
-        : null;
+    prepare({ name, eventDate, endDate, venue }) {
+      let formatted = null;
+      if (eventDate) {
+        const start = new Date(`${eventDate}T12:00:00`);
+        if (endDate) {
+          const end = new Date(`${endDate}T12:00:00`);
+          const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+          const sameYear = start.getFullYear() === end.getFullYear();
+          if (sameMonth) {
+            formatted = `${start.getDate()} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+          } else if (sameYear) {
+            formatted = `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+          } else {
+            formatted = `${start.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} – ${end.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
+          }
+        } else {
+          formatted = start.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+        }
+      }
       return {
         title: name,
         subtitle: [formatted, venue].filter(Boolean).join(" · "),
