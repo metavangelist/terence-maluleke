@@ -11,8 +11,10 @@ import {
   BarChartIcon,
   DocumentsIcon,
   HomeIcon,
+  EarthGlobeIcon,
 } from "@sanity/icons";
 import { AnalyticsTool } from "./plugins/analytics/AnalyticsTool";
+import { SiteStatusTool } from "./plugins/site-status/SiteStatusTool";
 import {
   AssamblageGridView,
   GalleryGridView,
@@ -128,5 +130,12 @@ export const structure: StructureResolver = (S) =>
               apiSecret: analyticsApiSecret,
             })
           ).title("Analytics")
+        ),
+      S.listItem()
+        .id("site-status")
+        .title("Site Status")
+        .icon(EarthGlobeIcon)
+        .child(
+          S.component(SiteStatusTool).title("Site Status")
         ),
     ]);
