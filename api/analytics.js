@@ -94,7 +94,7 @@ function artworkLabelFromPath(path) {
 }
 
 module.exports = async (req, res) => {
-  const origin = req.headers.origin || "";
+  const origin = (req.headers.origin || "").toLowerCase();
 
   if (TRUSTED_ORIGINS.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
