@@ -12,11 +12,12 @@ export async function fetchAnalytics(
   const url = new URL(config.apiUrl);
   url.searchParams.set("range", range);
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Authorization: `Bearer ${config.apiSecret}`,
-    },
-  });
+  const headers: Record<string, string> = {};
+  if (config.apiSecret) {
+    headers.Authorization = `Bearer ${config.apiSecret}`;
+  }
+
+  const response = await fetch(url.toString(), { headers });
 
   const payload = await response.json();
 

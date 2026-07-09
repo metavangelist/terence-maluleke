@@ -305,20 +305,65 @@
   initStudyGallery();
 })();
 
-async function initStudyGallery() {
-  const layout = document.getElementById("studyGrid");
-  if (!layout) return;
+function studySizedImageUrl(url, width) {
+  if (!url || !String(url).includes("cdn.sanity.io/")) return url;
+  const base = String(url).split("?")[0];
+  const lower = base.toLowerCase();
+  if (lower.endsWith(".png")) return `${base}?w=${width}&fm=png&q=90`;
+  if (lower.endsWith(".gif")) return `${base}?w=${width}&fm=gif`;
+  return `${base}?w=${width}&auto=format&q=82`;
+}
 
-  let files = [];
+function studyLocalSrc(file) {
+  return `assets/study/${encodeURIComponent(file)}`;
+}
+
+function escapeStudyAttr(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+async function loadStudyImageSources() {
+  if (window.sanityClient?.fetchStudyImages) {
+    try {
+      const docs = await window.sanityClient.fetchStudyImages();
+      if (Array.isArray(docs) && docs.length > 0) {
+        return docs
+          .map((doc) => {
+            if (doc.imageUrl) return studySizedImageUrl(doc.imageUrl, 1200);
+            if (doc.legacyFilename) return studyLocalSrc(doc.legacyFilename);
+            return null;
+          })
+          .filter(Boolean);
+      }
+    } catch (err) {
+      console.warn("[study] Sanity fetch failed; using static study-images.json.", err);
+    }
+  }
+
   try {
     const res = await fetch("pages/study-images.json");
     if (res.ok) {
       const data = await res.json();
-      files = Array.isArray(data.images) ? data.images : [];
+      const files = Array.isArray(data.images) ? data.images : [];
+      return files.map((file) => studyLocalSrc(file));
     }
-  } catch {}
+  } catch (err) {
+    console.warn("[study] Static study-images.json failed.", err);
+  }
 
-  if (!files.length) {
+  return [];
+}
+
+async function initStudyGallery() {
+  const layout = document.getElementById("studyGrid");
+  if (!layout) return;
+
+  const sources = await loadStudyImageSources();
+
+  if (!sources.length) {
     window.studyCatalogReady = true;
     window.studyPreload = { getAllUrls: () => [] };
     document.dispatchEvent(new CustomEvent("study:ready"));
@@ -326,19 +371,19 @@ async function initStudyGallery() {
   }
 
   const zones = ["tl", "tr", "bl", "br"];
-  const perZone = Math.ceil(files.length / zones.length);
+  const perZone = Math.ceil(sources.length / zones.length);
 
   zones.forEach((zone, zi) => {
     const el = layout.querySelector(`[data-zone="${zone}"]`);
     if (!el) return;
 
-    const slice = files.slice(zi * perZone, (zi + 1) * perZone);
+    const slice = sources.slice(zi * perZone, (zi + 1) * perZone);
     el.innerHTML = slice
       .map(
-        (file) => `
+        (src) => `
           <figure class="study-gallery__item">
             <img
-              src="assets/study/${encodeURIComponent(file)}"
+              src="${escapeStudyAttr(src)}"
               alt=""
               loading="eager"
               decoding="async"
@@ -352,8 +397,7 @@ async function initStudyGallery() {
 
   window.studyCatalogReady = true;
   window.studyPreload = {
-    getAllUrls: () =>
-      files.map((file) => `assets/study/${encodeURIComponent(file)}`),
+    getAllUrls: () => sources.slice(),
   };
   document.dispatchEvent(new CustomEvent("study:ready"));
 }

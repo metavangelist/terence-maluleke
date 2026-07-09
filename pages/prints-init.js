@@ -2625,8 +2625,8 @@ async function loadCatalog() {
         catalog = catalog.filter((item) => isPrintMedium(item));
         return;
       }
-    } catch (_) {
-      /* fall back to static JSON */
+    } catch (err) {
+      console.warn("[prints] Sanity fetch failed; using static catalog.", err);
     }
   }
 

@@ -69,7 +69,7 @@
       ),
     fetchPaintings: () =>
       sanityQuery(
-        `*[_type == "artwork" && !(pairRole == "secondary") && !lower(coalesce(medium, "")) match "print*" && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) ${ARTWORK_FIELDS}`
+        `*[_type == "artwork" && !(pairRole == "secondary") && !(lower(coalesce(medium, "")) match "print*") && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) ${ARTWORK_FIELDS}`
       ),
     fetchPrints: () =>
       sanityQuery(
@@ -81,33 +81,35 @@
       ),
     fetchStudyImages: () =>
       sanityQuery(
-        `*[_type == "studyImage"] | order(orderRank asc, title asc) {
+        `*[_type == "studyImage" && !(_id in path("drafts.**"))] | order(orderRank asc, title asc) {
           _id, title, legacyFilename, "imageUrl": image.asset->url
         }`
       ),
     fetchExhibitions: () =>
       sanityQuery(
-        `*[_type == "exhibition"] | order(eventDate asc) {
+        `*[_type == "exhibition" && !(_id in path("drafts.**"))] | order(eventDate asc) {
           _id, name, "slug": slug.current, eventDate, endDate, day, venue, detail, month, year
         }`
       ),
     fetchSiteSettings: () =>
-      sanityQuery(`*[_id == "siteSettings"][0]{ siteTitle, enquiryEmail, instagramUrl }`),
+      sanityQuery(
+        `*[_id == "siteSettings" && !(_id in path("drafts.**"))][0]{ siteTitle, enquiryEmail, instagramUrl }`
+      ),
     fetchHomeBubble: () =>
       sanityQuery(`{
-        "bubble": *[_id == "homeBubble"][0]{
+        "bubble": *[_id == "homeBubble" && !(_id in path("drafts.**"))][0]{
           objectPosition,
           "imageUrl": coalesce(artwork.asset->url, defaultArtwork.asset->url),
           "hotspot": coalesce(artwork.hotspot, defaultArtwork.hotspot),
           "usesDefault": !defined(artwork.asset)
         },
-        "legacy": *[_id == "siteSettings"][0]{
+        "legacy": *[_id == "siteSettings" && !(_id in path("drafts.**"))][0]{
           "objectPosition": homeBubbleObjectPosition,
           "imageUrl": homeBubbleImage.asset->url,
           "hotspot": homeBubbleImage.hotspot
         }
       }`),
     fetchArtistBio: () =>
-      sanityQuery(`*[_id == "artistInfo"][0]{ bio }`),
+      sanityQuery(`*[_id == "artistInfo" && !(_id in path("drafts.**"))][0]{ bio }`),
   };
 })();

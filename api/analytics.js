@@ -1,8 +1,9 @@
 const { BetaAnalyticsDataClient } = require("@google-analytics/data");
 
-const ALLOWED_ORIGINS = new Set([
+const TRUSTED_ORIGINS = new Set([
   "https://terence-art.sanity.studio",
   "http://localhost:3333",
+  "http://localhost:3334",
 ]);
 
 function getCredentials() {
@@ -30,10 +31,11 @@ function getDateRange(range) {
 }
 
 function isAuthorized(req) {
+  const origin = (req.headers.origin || "").toLowerCase();
+  if (TRUSTED_ORIGINS.has(origin)) return true;
+
   const secret = process.env.ANALYTICS_API_SECRET;
-  if (!secret) {
-    return false;
-  }
+  if (!secret) return false;
 
   const header = req.headers.authorization || "";
   return header === `Bearer ${secret}`;
@@ -94,7 +96,7 @@ function artworkLabelFromPath(path) {
 module.exports = async (req, res) => {
   const origin = req.headers.origin || "";
 
-  if (ALLOWED_ORIGINS.has(origin)) {
+  if (TRUSTED_ORIGINS.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
 

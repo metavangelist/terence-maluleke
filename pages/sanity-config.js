@@ -3,5 +3,6 @@ window.SANITY_CONFIG = {
   projectId: "um9my25h",
   dataset: "production",
   apiVersion: "2024-01-01",
-  useCdn: true,
+  // Live API (not apicdn) so published CMS uploads appear immediately.
+  useCdn: false,
 };

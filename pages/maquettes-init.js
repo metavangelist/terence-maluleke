@@ -609,8 +609,8 @@
             .map((work, index) => mapWorkFromSanity(work, worksById, index));
           return;
         }
-      } catch (_) {
-        /* fall back to static catalog */
+      } catch (err) {
+        console.warn("[assamblage] Sanity fetch failed; using static catalog.", err);
       }
     }
 
@@ -626,6 +626,8 @@
   }
 
   function shouldUseLocalAssamblageAsset(item) {
+    // CMS uploads always win over local legacy files.
+    if (item?.remotePreviewSrc || item?.remoteViewSrc) return false;
     const file = item?.file;
     if (!file) return false;
     if (/^cfg(-mobile)?\.(png|jpe?g)$/i.test(file)) return true;
@@ -645,15 +647,17 @@
   }
 
   function itemPreviewSrc(item) {
+    if (item?.remotePreviewSrc) return item.remotePreviewSrc;
     const local = assetSrc(item.file);
     if (shouldUseLocalAssamblageAsset(item)) return local;
-    return item?.remotePreviewSrc || local;
+    return local;
   }
 
   function itemViewSrc(item) {
+    if (item?.remoteViewSrc) return item.remoteViewSrc;
     const local = assetSrc(item.file);
     if (shouldUseLocalAssamblageAsset(item)) return local;
-    return item?.remoteViewSrc || local;
+    return local;
   }
 
   function getMaquettesIndexScroller() {

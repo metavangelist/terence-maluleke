@@ -19,8 +19,8 @@ export function AnalyticsTool({ apiUrl, apiSecret }: AnalyticsToolProps) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!apiUrl || !apiSecret) {
-      setError("Analytics API is not configured. Add SANITY_STUDIO_ANALYTICS_API_URL and SANITY_STUDIO_ANALYTICS_API_SECRET.");
+    if (!apiUrl) {
+      setError("Analytics API URL is not configured.");
       setLoading(false);
       return;
     }
