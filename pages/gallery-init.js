@@ -279,6 +279,17 @@ function isGalleryGridAtBottom(scroller = getGalleryIndexScroller()) {
   return atLastSnap && !canScrollDown;
 }
 
+function isGalleryGridVisuallyAtBottom(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return false;
+  const tolerance = 8;
+  return scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - tolerance;
+}
+
+function isGalleryGridVisuallyAtTop(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return false;
+  return scroller.scrollTop <= 2;
+}
+
 function isInfoHandoff(targetSlug) {
   return targetSlug === "info";
 }
@@ -308,6 +319,9 @@ function markGallerySectionEntered() {
   syncGalleryIndexPageHeights();
   ensureGalleryIndexScrollReadySoon();
   galleryLastGridPageSeen = -1;
+  galleryExitArmTimer = window.setTimeout(() => {
+    galleryExitToPrintsArmed = true;
+  }, GALLERY_GRID_EXIT_ARM_DELAY_MS);
 }
 
 function galleryEdgesArmed() {
@@ -1478,14 +1492,22 @@ function initGalleryIndexNav() {
   }
 
   function doGridHandoff(targetSlug) {
-    if (!isGalleryIndexScrollReady()) return;
-    if (targetSlug === "prints" && !galleryPrintsHandoffReady()) return;
-    if (targetSlug === "prints" && !isGalleryGridAtBottom(scroller)) return;
-    prepSectionHandoff(targetSlug);
+    const visuallyAtBottom = isGalleryGridVisuallyAtBottom(scroller);
+    const visuallyAtTop = isGalleryGridVisuallyAtTop(scroller);
+    const atBottom = visuallyAtBottom || isGalleryGridAtBottom(scroller);
+    const atTop = visuallyAtTop || isGalleryGridAtTop(scroller);
+    
     if (targetSlug === "prints") {
-      syncGalleryIndexPageHeights();
-      clampGalleryIndexScroll(scroller);
+      if (!atBottom) return;
+      if (!galleryPrintsHandoffReady()) return;
+      if (isGalleryIndexScrollReady()) {
+        syncGalleryIndexPageHeights();
+        clampGalleryIndexScroll(scroller);
+      }
     }
+    if (targetSlug === "info" && !atTop) return;
+    
+    prepSectionHandoff(targetSlug);
     galleryEdgeHandoff = true;
     window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
     window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
@@ -1498,15 +1520,16 @@ function initGalleryIndexNav() {
       if (galleryViewMode !== "grid") return;
       if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
-      if (!isGalleryIndexScrollReady()) {
-        event.preventDefault();
-        event.stopPropagation();
+      const scrollReady = isGalleryIndexScrollReady();
+      
+      if (!scrollReady) {
         ensureGalleryIndexScrollReadySoon();
-        return;
       }
 
-      const atTop = isGalleryGridAtTop(scroller);
-      const atBottom = isGalleryGridAtBottom(scroller);
+      const atTopVisual = isGalleryGridVisuallyAtTop(scroller);
+      const atBottomVisual = isGalleryGridVisuallyAtBottom(scroller);
+      const atTop = scrollReady ? isGalleryGridAtTop(scroller) : atTopVisual;
+      const atBottom = scrollReady ? isGalleryGridAtBottom(scroller) : atBottomVisual;
       const canScrollDown =
         scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
       const canScrollUp = scroller.scrollTop > 0;
@@ -1516,7 +1539,7 @@ function initGalleryIndexNav() {
         return;
       }
 
-      if (atTop && event.deltaY < 0) {
+      if ((atTop || atTopVisual) && event.deltaY < 0) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -1538,16 +1561,7 @@ function initGalleryIndexNav() {
         return;
       }
 
-      if (atBottom && event.deltaY > 0) {
-        if (!galleryPrintsHandoffReady()) {
-          galleryGridBottomWheelAccum = 0;
-          if (!galleryEdgesArmedFor("prints")) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          return;
-        }
-
+      if ((atBottom || atBottomVisual) && event.deltaY > 0) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -1595,19 +1609,22 @@ function initGalleryIndexNav() {
       if (document.body.dataset.currentSection !== "paintings") return;
       if (galleryViewMode !== "grid") return;
       if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
-      if (!isGalleryIndexScrollReady()) {
+      
+      const scrollReady = isGalleryIndexScrollReady();
+      if (!scrollReady) {
         ensureGalleryIndexScrollReadySoon();
-        return;
       }
 
       const touch = event.changedTouches[0];
       if (!touch) return;
 
       const deltaY = touch.clientY - indexTouchStartY;
-      const atTop = isGalleryGridAtTop(scroller);
-      const atBottom = isGalleryGridAtBottom(scroller);
+      const atTopVisual = isGalleryGridVisuallyAtTop(scroller);
+      const atBottomVisual = isGalleryGridVisuallyAtBottom(scroller);
+      const atTop = scrollReady ? isGalleryGridAtTop(scroller) : atTopVisual;
+      const atBottom = scrollReady ? isGalleryGridAtBottom(scroller) : atBottomVisual;
 
-      if (atTop && deltaY > 36) {
+      if ((atTop || atTopVisual) && deltaY > 36) {
         if (!galleryEdgesArmed()) return;
 
         touchDownHitCount = 0;
@@ -1622,8 +1639,7 @@ function initGalleryIndexNav() {
         return;
       }
 
-      if (atBottom && deltaY < -36) {
-        if (!galleryPrintsHandoffReady() || !isGalleryIndexScrollReady()) return;
+      if ((atBottom || atBottomVisual) && deltaY < -36) {
         if (!galleryEdgesArmedFor("prints")) return;
 
         touchBottomHitCount = 0;

@@ -280,6 +280,17 @@ function isGalleryGridAtBottom(scroller = getGalleryIndexScroller()) {
   return atLastSnap && !canScrollDown;
 }
 
+function isGalleryGridVisuallyAtBottom(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return false;
+  const tolerance = 8;
+  return scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - tolerance;
+}
+
+function isGalleryGridVisuallyAtTop(scroller = getGalleryIndexScroller()) {
+  if (!scroller) return false;
+  return scroller.scrollTop <= 2;
+}
+
 function isInfoHandoff(targetSlug) {
   return targetSlug === "info";
 }
@@ -309,6 +320,9 @@ function markPrintsSectionEntered() {
   syncGalleryIndexPageHeights();
   ensurePrintsIndexScrollReadySoon();
   galleryLastGridPageSeen = -1;
+  galleryExitArmTimer = window.setTimeout(() => {
+    printsExitToMaquettesArmed = true;
+  }, PRINTS_GRID_EXIT_ARM_DELAY_MS);
 }
 
 function galleryEdgesArmed() {
@@ -1477,14 +1491,22 @@ function initPrintsIndexNav() {
   }
 
   function doGridHandoff(targetSlug) {
-    if (!isGalleryIndexScrollReady()) return;
-    if (targetSlug === "maquettes" && !printsMaquettesHandoffReady()) return;
-    if (targetSlug === "maquettes" && !isGalleryGridAtBottom(scroller)) return;
-    prepSectionHandoff(targetSlug);
+    const visuallyAtBottom = isGalleryGridVisuallyAtBottom(scroller);
+    const visuallyAtTop = isGalleryGridVisuallyAtTop(scroller);
+    const atBottom = visuallyAtBottom || isGalleryGridAtBottom(scroller);
+    const atTop = visuallyAtTop || isGalleryGridAtTop(scroller);
+    
     if (targetSlug === "maquettes") {
-      syncGalleryIndexPageHeights();
-      clampGalleryIndexScroll(scroller);
+      if (!atBottom) return;
+      if (!printsMaquettesHandoffReady()) return;
+      if (isGalleryIndexScrollReady()) {
+        syncGalleryIndexPageHeights();
+        clampGalleryIndexScroll(scroller);
+      }
     }
+    if (targetSlug === "paintings" && !atTop) return;
+    
+    prepSectionHandoff(targetSlug);
     galleryEdgeHandoff = true;
     window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
     window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
@@ -1497,15 +1519,16 @@ function initPrintsIndexNav() {
       if (galleryViewMode !== "grid") return;
       if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
-      if (!isGalleryIndexScrollReady()) {
-        event.preventDefault();
-        event.stopPropagation();
+      const scrollReady = isGalleryIndexScrollReady();
+      
+      if (!scrollReady) {
         ensurePrintsIndexScrollReadySoon();
-        return;
       }
 
-      const atTop = isGalleryGridAtTop(scroller);
-      const atBottom = isGalleryGridAtBottom(scroller);
+      const atTopVisual = isGalleryGridVisuallyAtTop(scroller);
+      const atBottomVisual = isGalleryGridVisuallyAtBottom(scroller);
+      const atTop = scrollReady ? isGalleryGridAtTop(scroller) : atTopVisual;
+      const atBottom = scrollReady ? isGalleryGridAtBottom(scroller) : atBottomVisual;
       const canScrollDown =
         scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
       const canScrollUp = scroller.scrollTop > 0;
@@ -1515,7 +1538,7 @@ function initPrintsIndexNav() {
         return;
       }
 
-      if (atTop && event.deltaY < 0) {
+      if ((atTop || atTopVisual) && event.deltaY < 0) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -1537,16 +1560,7 @@ function initPrintsIndexNav() {
         return;
       }
 
-      if (atBottom && event.deltaY > 0) {
-        if (!printsMaquettesHandoffReady()) {
-          printsGridBottomWheelAccum = 0;
-          if (!galleryEdgesArmedFor("maquettes")) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          return;
-        }
-
+      if ((atBottom || atBottomVisual) && event.deltaY > 0) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -1594,19 +1608,22 @@ function initPrintsIndexNav() {
       if (document.body.dataset.currentSection !== "prints") return;
       if (galleryViewMode !== "grid") return;
       if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
-      if (!isGalleryIndexScrollReady()) {
+      
+      const scrollReady = isGalleryIndexScrollReady();
+      if (!scrollReady) {
         ensurePrintsIndexScrollReadySoon();
-        return;
       }
 
       const touch = event.changedTouches[0];
       if (!touch) return;
 
       const deltaY = touch.clientY - indexTouchStartY;
-      const atTop = isGalleryGridAtTop(scroller);
-      const atBottom = isGalleryGridAtBottom(scroller);
+      const atTopVisual = isGalleryGridVisuallyAtTop(scroller);
+      const atBottomVisual = isGalleryGridVisuallyAtBottom(scroller);
+      const atTop = scrollReady ? isGalleryGridAtTop(scroller) : atTopVisual;
+      const atBottom = scrollReady ? isGalleryGridAtBottom(scroller) : atBottomVisual;
 
-      if (atTop && deltaY > 36) {
+      if ((atTop || atTopVisual) && deltaY > 36) {
         if (!galleryEdgesArmedFor("paintings")) return;
 
         touchDownHitCount = 0;
@@ -1621,8 +1638,7 @@ function initPrintsIndexNav() {
         return;
       }
 
-      if (atBottom && deltaY < -36) {
-        if (!printsMaquettesHandoffReady() || !isGalleryIndexScrollReady()) return;
+      if ((atBottom || atBottomVisual) && deltaY < -36) {
         if (!galleryEdgesArmedFor("maquettes")) return;
 
         touchBottomHitCount = 0;

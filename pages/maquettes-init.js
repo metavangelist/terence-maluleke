@@ -784,6 +784,17 @@
     return scroller.scrollTop + scroller.clientHeight >= scrollHeight - 2;
   }
 
+  function isMaquettesGridVisuallyAtBottom(scroller = getMaquettesIndexScroller()) {
+    if (!scroller) return false;
+    const tolerance = 8;
+    return scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - tolerance;
+  }
+
+  function isMaquettesGridVisuallyAtTop(scroller = getMaquettesIndexScroller()) {
+    if (!scroller) return false;
+    return scroller.scrollTop <= 2;
+  }
+
   function maquettesEdgesArmed() {
     return Date.now() - maquettesSectionEnteredAt >= MAQ_NEIGHBOR_EDGE_ARM_DELAY_MS;
   }
@@ -1769,8 +1780,17 @@
     }
 
     function doGridHandoff(targetSlug) {
-      if (!isMaquettesIndexScrollReady()) return;
-      if (targetSlug === "study" && !maqExitToStudyArmed) return;
+      const visuallyAtBottom = isMaquettesGridVisuallyAtBottom(scroller);
+      const visuallyAtTop = isMaquettesGridVisuallyAtTop(scroller);
+      const atBottom = visuallyAtBottom || isMaquettesGridAtBottom(scroller);
+      const atTop = visuallyAtTop || isMaquettesGridAtTop(scroller);
+      
+      if (targetSlug === "study") {
+        if (!atBottom) return;
+        if (!maqExitToStudyArmed) return;
+      }
+      if (targetSlug === "prints" && !atTop) return;
+      
       prepSectionHandoff(targetSlug);
       maquettesEdgeHandoff = true;
       window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
@@ -1784,15 +1804,16 @@
         if (viewMode !== "grid") return;
         if (maquettesEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
-        if (!isMaquettesIndexScrollReady()) {
-          event.preventDefault();
-          event.stopPropagation();
+        const scrollReady = isMaquettesIndexScrollReady();
+        
+        if (!scrollReady) {
           ensureMaquettesIndexScrollReadySoon();
-          return;
         }
 
-        const atTop = isMaquettesGridAtTop(scroller);
-        const atBottom = isMaquettesGridAtBottom(scroller);
+        const atTopVisual = isMaquettesGridVisuallyAtTop(scroller);
+        const atBottomVisual = isMaquettesGridVisuallyAtBottom(scroller);
+        const atTop = scrollReady ? isMaquettesGridAtTop(scroller) : atTopVisual;
+        const atBottom = scrollReady ? isMaquettesGridAtBottom(scroller) : atBottomVisual;
         const canScrollDown =
           scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
         const canScrollUp = scroller.scrollTop > 0;
@@ -1802,7 +1823,7 @@
           return;
         }
 
-        if (atTop && event.deltaY < 0) {
+        if ((atTop || atTopVisual) && event.deltaY < 0) {
           event.preventDefault();
           event.stopPropagation();
 
@@ -1823,7 +1844,7 @@
           return;
         }
 
-        if (atBottom && event.deltaY > 0) {
+        if ((atBottom || atBottomVisual) && event.deltaY > 0) {
           event.preventDefault();
           event.stopPropagation();
 
@@ -1856,19 +1877,22 @@
         if (document.body.dataset.currentSection !== "maquettes") return;
         if (viewMode !== "grid") return;
         if (maquettesEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
-        if (!isMaquettesIndexScrollReady()) {
+        
+        const scrollReady = isMaquettesIndexScrollReady();
+        if (!scrollReady) {
           ensureMaquettesIndexScrollReadySoon();
-          return;
         }
 
         const touch = event.changedTouches[0];
         if (!touch) return;
 
         const deltaY = touch.clientY - indexTouchStartY;
-        const atTop = isMaquettesGridAtTop(scroller);
-        const atBottom = isMaquettesGridAtBottom(scroller);
+        const atTopVisual = isMaquettesGridVisuallyAtTop(scroller);
+        const atBottomVisual = isMaquettesGridVisuallyAtBottom(scroller);
+        const atTop = scrollReady ? isMaquettesGridAtTop(scroller) : atTopVisual;
+        const atBottom = scrollReady ? isMaquettesGridAtBottom(scroller) : atBottomVisual;
 
-        if (atTop && deltaY > 36) {
+        if ((atTop || atTopVisual) && deltaY > 36) {
           if (!maquettesEdgesArmed()) return;
 
           touchUpHitCount += 1;
@@ -1882,8 +1906,8 @@
           return;
         }
 
-        if (atBottom && deltaY < -36) {
-          if (!maqExitToStudyArmed || !isMaquettesIndexScrollReady()) return;
+        if ((atBottom || atBottomVisual) && deltaY < -36) {
+          if (!maqExitToStudyArmed) return;
           if (!maquettesEdgesArmed()) return;
 
           doGridHandoff("study");
