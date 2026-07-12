@@ -48,11 +48,12 @@
         resolve();
       };
       video.muted = true;
-      video.preload = "auto";
+      video.preload = "metadata";
       video.playsInline = true;
-      video.addEventListener("loadeddata", done, { once: true });
+      video.addEventListener("loadedmetadata", done, { once: true });
+      video.addEventListener("canplay", done, { once: true });
       video.addEventListener("error", done, { once: true });
-      window.setTimeout(done, 9000);
+      window.setTimeout(done, 3000);
       video.src = src;
     });
   }
@@ -188,7 +189,7 @@
     return new Promise((resolve) => {
       const finish = () => resolve();
       document.addEventListener("info-stars:ready", finish, { once: true });
-      window.setTimeout(finish, 20000);
+      window.setTimeout(finish, 5000);
     });
   }
 
@@ -201,7 +202,6 @@
       loadHomeBubbleArt(),
       loadImage("videos/exhibitions-bg-poster.jpg"),
       loadVideo("videos/exhibitions-bg-web.mp4"),
-      loadVideo("videos/info/muse-5.mp4"),
       warmExhibitionsVideoElement(),
     ];
 

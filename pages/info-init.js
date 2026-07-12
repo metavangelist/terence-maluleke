@@ -8,26 +8,8 @@ const INFO_ARCHIVE_VIDEOS = [
   "videos/info/archives/archive-fathers-graduation-party.mp4",
 ];
 
-const starVideoBlobUrls = new Map();
-const starVideoFetchTasks = new Map();
+const starVideoReadyMap = new Map();
 let infoStarVideosReadyPromise = null;
-
-INFO_ARCHIVE_VIDEOS.forEach((src) => {
-  starVideoFetchTasks.set(
-    src,
-    fetch(src)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Failed to fetch ${src}`);
-        return response.blob();
-      })
-      .then((blob) => {
-        const url = URL.createObjectURL(blob);
-        starVideoBlobUrls.set(src, url);
-        return url;
-      })
-      .catch(() => src)
-  );
-});
 
 function starVideoSource(video) {
   return video.dataset.starSrc || video.getAttribute("src") || "";
@@ -40,38 +22,34 @@ function preloadInfoVideo(video) {
   video.defaultMuted = true;
   video.playsInline = true;
   video.loop = true;
-  video.preload = "auto";
-  video.setAttribute("preload", "auto");
+  video.preload = "metadata";
+  video.setAttribute("preload", "metadata");
   video.setAttribute("muted", "");
   video.setAttribute("playsinline", "");
   video.setAttribute("loop", "");
-
-  if (video.readyState < 2) {
-    video.load();
-  }
 }
 
 function waitForStarVideoReady(video) {
   return new Promise((resolve) => {
     const finish = () => resolve(video);
 
-    if (video.readyState >= 4) {
+    if (video.readyState >= 1) {
       finish();
       return;
     }
 
     const onReady = () => {
-      video.removeEventListener("canplaythrough", onReady);
-      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("loadedmetadata", onReady);
+      video.removeEventListener("canplay", onReady);
       video.removeEventListener("error", onReady);
       finish();
     };
 
-    video.addEventListener("canplaythrough", onReady, { once: true });
-    video.addEventListener("loadeddata", onReady, { once: true });
+    video.addEventListener("loadedmetadata", onReady, { once: true });
+    video.addEventListener("canplay", onReady, { once: true });
     video.addEventListener("error", onReady, { once: true });
     preloadInfoVideo(video);
-    window.setTimeout(finish, 20000);
+    window.setTimeout(finish, 3000);
   });
 }
 
@@ -79,11 +57,8 @@ async function primeStarVideoElement(video) {
   const src = starVideoSource(video);
   if (!src) return video;
 
-  const fetchTask = starVideoFetchTasks.get(src);
-  const resolvedSrc = fetchTask ? await fetchTask : src;
-
-  if (video.src !== resolvedSrc) {
-    video.src = resolvedSrc;
+  if (!video.src && src) {
+    video.src = src;
   }
 
   preloadInfoVideo(video);
