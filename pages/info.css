@@ -24,7 +24,7 @@
 
 /* ── Archive video stars ── */
 
-#section-info .info-stars {
+:is(#section-info, #section-home) .info-stars {
   position: absolute;
   inset: 0;
   z-index: 4;
@@ -39,12 +39,20 @@
   z-index: 1;
 }
 
-#section-info .info-stars.is-ready {
+#section-home .info-stars {
+  z-index: 20;
+}
+
+#section-home .info-stars--back {
+  z-index: 19;
+}
+
+:is(#section-info, #section-home) .info-stars.is-ready {
   opacity: 1;
   visibility: visible;
 }
 
-#section-info .info-star {
+:is(#section-info, #section-home) .info-star {
   --star-size: clamp(88px, 11vw, 122px);
   --star-duration: 4.2s;
 
@@ -56,7 +64,7 @@
   animation: info-star-twinkle var(--star-duration) ease-in-out infinite;
 }
 
-#section-info .info-star[data-star-index="0"] {
+:is(#section-info, #section-home) .info-star[data-star-index="0"] {
   left: 11%;
   top: 18%;
   --star-size: clamp(88px, 10vw, 104px);
@@ -65,7 +73,7 @@
   z-index: 4;
 }
 
-#section-info .info-star[data-star-index="1"] {
+:is(#section-info, #section-home) .info-star[data-star-index="1"] {
   left: 89%;
   top: 20%;
   --star-size: clamp(96px, 10.85vw, 114px);
@@ -74,7 +82,7 @@
   z-index: 5;
 }
 
-#section-info .info-star[data-star-index="2"] {
+:is(#section-info, #section-home) .info-star[data-star-index="2"] {
   left: 84%;
   top: 74%;
   --star-size: clamp(104px, 11.7vw, 122px);
@@ -82,7 +90,51 @@
   animation-delay: -0.9s;
 }
 
-#section-info .info-star__shape {
+/* Extra homepage stars */
+#section-home .info-star[data-star-index="3"] {
+  left: 8%;
+  top: 52%;
+  --star-size: clamp(78px, 9vw, 98px);
+  --star-duration: 4.3s;
+  animation-delay: -1.2s;
+}
+
+#section-home .info-star[data-star-index="4"] {
+  left: 22%;
+  top: 82%;
+  --star-size: clamp(92px, 10.5vw, 112px);
+  --star-duration: 3.9s;
+  animation-delay: -0.2s;
+}
+
+#section-home .info-star[data-star-index="5"] {
+  left: 48%;
+  top: 10%;
+  --star-size: clamp(72px, 8.5vw, 92px);
+  --star-duration: 4.7s;
+  animation-delay: -1.6s;
+  z-index: 3;
+}
+
+#section-home .info-star[data-star-index="6"] {
+  left: 68%;
+  top: 42%;
+  --star-size: clamp(86px, 9.8vw, 108px);
+  --star-duration: 4.1s;
+  animation-delay: -0.7s;
+  z-index: 4;
+}
+
+#section-home .info-star[data-star-index="7"] {
+  left: 36%;
+  top: 88%;
+  --star-size: clamp(80px, 9.2vw, 100px);
+  --star-duration: 4.4s;
+  animation-delay: -1.35s;
+  z-index: 5;
+}
+
+:is(#section-info, #section-home) .info-star__shape {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -100,7 +152,7 @@
   );
 }
 
-#section-info .info-star__video {
+:is(#section-info, #section-home) .info-star__video {
   display: block;
   width: 100%;
   height: 100%;
@@ -289,19 +341,50 @@
     --info-cube-size: min(40vw, 160px);
   }
 
-  #section-info .info-star[data-star-index="0"] {
+  :is(#section-info, #section-home) .info-star[data-star-index="0"] {
     left: 9%;
     top: 17%;
   }
 
-  #section-info .info-star[data-star-index="1"] {
+  :is(#section-info, #section-home) .info-star[data-star-index="1"] {
     left: 91%;
     top: 19%;
   }
 
-  #section-info .info-star[data-star-index="2"] {
+  :is(#section-info, #section-home) .info-star[data-star-index="2"] {
     left: 88%;
     top: 76%;
+  }
+
+  #section-home .info-star[data-star-index="3"] {
+    left: 7%;
+    top: 48%;
+  }
+
+  #section-home .info-star[data-star-index="4"] {
+    left: 18%;
+    top: 80%;
+  }
+
+  #section-home .info-star[data-star-index="5"] {
+    left: 50%;
+    top: 9%;
+  }
+
+  #section-home .info-star[data-star-index="6"] {
+    left: 92%;
+    top: 38%;
+    --star-size: clamp(48px, 6.2vw, 62px);
+  }
+
+  #section-home .info-star[data-star-index="7"] {
+    left: 40%;
+    top: 86%;
+  }
+
+  #section-home .info-star[data-star-index="2"] {
+    left: 70%;
+    top: 65%;
   }
 
   #section-info .info-bio-wrap .bio {
@@ -313,11 +396,11 @@
 @media (prefers-reduced-motion: reduce) {
   #section-info .info-bg-video,
   #section-info .info-cube__video,
-  #section-info .info-star__video {
+  :is(#section-info, #section-home) .info-star__video {
     display: none;
   }
 
-  #section-info .info-star {
+  :is(#section-info, #section-home) .info-star {
     display: none;
   }
 

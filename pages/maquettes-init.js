@@ -92,7 +92,7 @@
 
   let maquettesEdgeHandoff = false;
   let maquettesSectionEnteredAt = 0;
-  let maqExitToStudyArmed = true;
+  let maqExitToCalendarArmed = true;
   let maqExitArmTimer = 0;
   let maqIndexScrollReady = false;
   let maqLastGridPageSeen = -1;
@@ -801,22 +801,22 @@
 
   function markMaquettesSectionEntered() {
     maquettesSectionEnteredAt = Date.now();
-    maqExitToStudyArmed = false;
+    maqExitToCalendarArmed = false;
     maqIndexScrollReady = false;
     window.clearTimeout(maqExitArmTimer);
     fixMaquettesHeights();
     syncMaquettesIndexPageHeights();
     ensureMaquettesIndexScrollReadySoon();
     maqExitArmTimer = window.setTimeout(() => {
-      maqExitToStudyArmed = true;
+      maqExitToCalendarArmed = true;
     }, MAQ_NEIGHBOR_EXIT_ARM_DELAY_MS);
   }
 
-  function disarmMaqExitToStudy() {
-    maqExitToStudyArmed = false;
+  function disarmMaqExitToCalendar() {
+    maqExitToCalendarArmed = false;
     window.clearTimeout(maqExitArmTimer);
     maqExitArmTimer = window.setTimeout(() => {
-      maqExitToStudyArmed = true;
+      maqExitToCalendarArmed = true;
     }, MAQ_NEIGHBOR_EXIT_ARM_DELAY_MS);
   }
 
@@ -840,9 +840,9 @@
     const lastPage = indexPageCount() - 1;
 
     if (page === lastPage && maqLastGridPageSeen !== lastPage) {
-      disarmMaqExitToStudy();
+      disarmMaqExitToCalendar();
     } else if (page !== lastPage) {
-      maqExitToStudyArmed = true;
+      maqExitToCalendarArmed = true;
       window.clearTimeout(maqExitArmTimer);
     }
 
@@ -1785,9 +1785,9 @@
       const atBottom = visuallyAtBottom || isMaquettesGridAtBottom(scroller);
       const atTop = visuallyAtTop || isMaquettesGridAtTop(scroller);
       
-      if (targetSlug === "study") {
+      if (targetSlug === "calendar") {
         if (!atBottom) return;
-        if (!maqExitToStudyArmed) return;
+        if (!maqExitToCalendarArmed) return;
       }
       if (targetSlug === "prints" && !atTop) return;
       
@@ -1848,10 +1848,10 @@
           event.preventDefault();
           event.stopPropagation();
 
-          if (!maqExitToStudyArmed) return;
+          if (!maqExitToCalendarArmed) return;
           if (!maquettesEdgesArmed()) return;
 
-          doGridHandoff("study");
+          doGridHandoff("calendar");
         }
       },
       { passive: false }
@@ -1907,10 +1907,10 @@
         }
 
         if ((atBottom || atBottomVisual) && deltaY < -36) {
-          if (!maqExitToStudyArmed) return;
+          if (!maqExitToCalendarArmed) return;
           if (!maquettesEdgesArmed()) return;
 
-          doGridHandoff("study");
+          doGridHandoff("calendar");
         }
       },
       { passive: true }

@@ -29,23 +29,19 @@ a.anon__list-item {
 }
 
 @media (max-width: 768px) {
-  :root {
-    --blob-size: clamp(120px, 34vw, 180px);
-  }
-
   .anon__title-word--terence {
-    font-size: clamp(2.5rem, 15vw, 4.5rem);
-    letter-spacing: 0.04em;
+    font-size: clamp(2.8rem, 18vw, 7rem);
+    letter-spacing: 0.03em;
   }
 
   .anon__title-word--ntsako {
-    font-size: clamp(1.85rem, 10.5vw, 3rem);
-    letter-spacing: 0.14em;
+    font-size: clamp(2.1rem, 14.5vw, 5.5rem);
+    letter-spacing: 0.16em;
   }
 
   .anon__title-word--maluleke {
-    font-size: clamp(2.1rem, 13.5vw, 3.8rem);
-    letter-spacing: 0.03em;
+    font-size: clamp(2.4rem, 16vw, 6.2rem);
+    letter-spacing: 0.02em;
   }
 
   .anon__tagline {
@@ -79,26 +75,20 @@ a.anon__list-item {
     max-width: 100%;
     font-size: clamp(9px, 2.5vw, 10px);
   }
-
-  .blob__content-pos .anon__foot {
-    align-items: center;
-    text-align: center;
-    justify-content: center;
-  }
 }
 
 @media (max-width: 768px) and (max-height: 700px) {
   .anon__title-word--terence {
-    font-size: clamp(1.9rem, 10vh, 2.8rem);
+    font-size: clamp(2.2rem, 15vw, 4.5rem);
   }
 
   .anon__title-word--ntsako {
-    font-size: clamp(1.4rem, 7vh, 2.1rem);
-    letter-spacing: 0.1em;
+    font-size: clamp(1.7rem, 12vw, 3.5rem);
+    letter-spacing: 0.12em;
   }
 
   .anon__title-word--maluleke {
-    font-size: clamp(1.65rem, 8.5vh, 2.5rem);
+    font-size: clamp(1.9rem, 13.5vw, 4rem);
   }
 
   body.home-anon .anon__list {

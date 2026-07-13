@@ -106,17 +106,6 @@ body.site-scroll.home-anon {
   box-sizing: border-box;
 }
 
-#section-study {
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow: hidden;
-  background: #3a4248;
-  box-sizing: border-box;
-}
-
 #section-maquettes {
   width: 100%;
   height: 100vh;

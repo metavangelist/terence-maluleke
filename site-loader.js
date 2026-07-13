@@ -13,19 +13,6 @@
     if (track) track.setAttribute("aria-valuenow", String(Math.round(pct)));
   }
 
-  const DEFAULT_HOME_BUBBLE = "assets/images/DSC01668_2.jpg";
-
-  async function loadHomeBubbleArt() {
-    if (!window.homeBubbleArt?.resolve) {
-      await loadImage(DEFAULT_HOME_BUBBLE);
-      return;
-    }
-
-    const art = await window.homeBubbleArt.resolve();
-    window.homeBubbleArt.applyToDom(art);
-    await loadImage(art.src);
-  }
-
   function loadImage(src) {
     if (window.ImagePreloadCache) {
       return window.ImagePreloadCache.load(src).then(() => {});
@@ -81,9 +68,6 @@
     return waitForReady("maquettes:ready", "maquettesCatalogReady", 8000);
   }
 
-  function waitForStudy() {
-    return waitForReady("study:ready", "studyCatalogReady", 8000);
-  }
 
   function collectArtworkUrls() {
     const previews = [];
@@ -103,7 +87,6 @@
     }
 
     other.push(...(window.maquettesPreload?.getAllUrls?.() || []));
-    other.push(...(window.studyPreload?.getAllUrls?.() || []));
 
     const dedupe = (list) => [...new Set(list.filter(Boolean))];
 
@@ -142,7 +125,7 @@
   }
 
   async function preloadSiteArtwork(onProgress) {
-    await Promise.all([waitForGallery(), waitForPrints(), waitForMaquettes(), waitForStudy()]);
+    await Promise.all([waitForGallery(), waitForPrints(), waitForMaquettes()]);
 
     const { previews, views, other } = collectArtworkUrls();
     const ordered = [...previews, ...views, ...other];
@@ -199,7 +182,6 @@
 
     const bootstrapTasks = [
       document.fonts?.ready ?? Promise.resolve(),
-      loadHomeBubbleArt(),
       loadImage("videos/exhibitions-bg-poster.jpg"),
       loadVideo("videos/exhibitions-bg-web.mp4"),
       warmExhibitionsVideoElement(),

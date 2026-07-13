@@ -78,6 +78,8 @@ async function primeStarVideoElement(video) {
 function markInfoStarsReady() {
   document.getElementById("infoStars")?.classList.add("is-ready");
   document.getElementById("infoStarsBack")?.classList.add("is-ready");
+  document.getElementById("homeStars")?.classList.add("is-ready");
+  document.getElementById("homeStarsBack")?.classList.add("is-ready");
   document.dispatchEvent(new CustomEvent("info-stars:ready"));
 }
 
@@ -90,14 +92,20 @@ function ensureInfoStarVideosReady() {
       return true;
     }
 
-    const videos = [...document.querySelectorAll(".info-star__video[data-info-star-video]")];
-    if (!videos.length) {
+    const infoVideos = [...document.querySelectorAll("#section-info .info-star__video[data-info-star-video]")];
+    const homeVideos = [...document.querySelectorAll("#section-home .info-star__video[data-info-star-video]")];
+
+    if (!infoVideos.length && !homeVideos.length) {
       markInfoStarsReady();
       return true;
     }
 
-    await Promise.all(videos.map((video) => primeStarVideoElement(video)));
+    await Promise.all(infoVideos.map((video) => primeStarVideoElement(video)));
     markInfoStarsReady();
+
+    if (homeVideos.length) {
+      Promise.all(homeVideos.map((video) => primeStarVideoElement(video))).catch(() => {});
+    }
     return true;
   })().catch(() => {
     markInfoStarsReady();
@@ -112,9 +120,11 @@ window.warmInfoStarVideos = ensureInfoStarVideosReady;
 window.INFO_ARCHIVE_VIDEOS = INFO_ARCHIVE_VIDEOS;
 
 function initInfoStars() {
-  document.querySelectorAll("#section-info .info-star__video").forEach((video) => {
-    preloadInfoVideo(video);
-  });
+  document
+    .querySelectorAll("#section-info .info-star__video, #section-home .info-star__video")
+    .forEach((video) => {
+      preloadInfoVideo(video);
+    });
 }
 
 function getDefaultBioText() {
@@ -444,36 +454,39 @@ function initInfoVideos() {
 }
 
 function initInfoStarVideos() {
-  const section = document.getElementById("section-info");
-  const videos = section?.querySelectorAll(".info-star__video[data-info-star-video]");
+  const sections = ["section-info", "section-home"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
 
-  if (!section || !videos?.length) return;
+  if (!sections.length) return;
 
-  const playAll = () => {
-    videos.forEach((video) => {
+  const playSection = (section) => {
+    section.querySelectorAll(".info-star__video[data-info-star-video]").forEach((video) => {
       if (video.paused) {
         video.play().catch(() => {});
       }
     });
   };
 
-  ensureInfoStarVideosReady().then(playAll);
+  ensureInfoStarVideosReady().then(() => {
+    sections.forEach(playSection);
+  });
 
-  if (!("IntersectionObserver" in window)) {
-    return;
-  }
+  if (!("IntersectionObserver" in window)) return;
 
   const scrollRoot = document.getElementById("siteScroller");
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting && entry.intersectionRatio > 0.12) playAll();
+        if (entry.isIntersecting && entry.intersectionRatio > 0.12) {
+          playSection(entry.target);
+        }
       });
     },
     { root: scrollRoot || null, threshold: [0, 0.12, 0.3] }
   );
 
-  observer.observe(section);
+  sections.forEach((section) => observer.observe(section));
 }
 
 function initPoemParallax() {

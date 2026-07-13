@@ -1,5 +1,5 @@
 (function initImageProtection() {
-  const ROOT_SELECTOR = "#siteScroller, .blob";
+  const ROOT_SELECTOR = "#siteScroller";
 
   function isProtectedTarget(target) {
     if (!(target instanceof Element)) {
@@ -12,7 +12,7 @@
 
     return Boolean(
       target.closest(
-        ".gallery-rico__frame, .gallery-index__cell, .study-gallery__item, .blob__painting"
+        ".gallery-rico__frame, .gallery-index__cell, .study-gallery__item"
       )
     );
   }
@@ -86,10 +86,5 @@
     });
 
     observer.observe(scroller, { childList: true, subtree: true });
-  }
-
-  const blob = document.getElementById("blob");
-  if (blob) {
-    scanImages(blob);
   }
 })();

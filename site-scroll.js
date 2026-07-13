@@ -25,11 +25,6 @@
       title: "Assamblage",
       topSection: "section-maquettes",
     },
-    study: {
-      slug: "study",
-      title: "Study",
-      topSection: "section-study",
-    },
     calendar: {
       slug: "calendar",
       title: "Calendar",
@@ -46,8 +41,8 @@
     paintings: "paintings",
     prints: "prints",
     maquettes: "maquettes",
-    study: "study",
-    spotify: "study",
+    study: "home",
+    spotify: "home",
     calendar: "calendar",
     shows: "calendar",
     exhibitions: "calendar",
@@ -59,7 +54,6 @@
     "section-gallery",
     "section-prints",
     "section-maquettes",
-    "section-study",
     "section-calendar",
   ];
 
@@ -194,7 +188,6 @@
         "site-nav--inverse",
         route.slug === "calendar" ||
           route.slug === "info" ||
-          route.slug === "study" ||
           route.slug === "paintings" ||
           route.slug === "prints" ||
           route.slug === "maquettes"
@@ -303,12 +296,6 @@
       window.playShowsVideo();
     } else if (typeof window.pauseShowsVideo === "function") {
       window.pauseShowsVideo();
-    }
-
-    if (route.slug === "study" && typeof window.playStudyVideo === "function") {
-      window.playStudyVideo();
-    } else if (typeof window.pauseStudyVideo === "function") {
-      window.pauseStudyVideo();
     }
 
     if (route.slug === "paintings") {
@@ -575,7 +562,6 @@
       { id: "section-gallery", slug: "paintings", title: "Paintings" },
       { id: "section-prints", slug: "prints", title: "Prints" },
       { id: "section-maquettes", slug: "maquettes", title: "Assamblage" },
-      { id: "section-study", slug: "study", title: "Study" },
       { id: "section-calendar", slug: "calendar", title: "Calendar" },
     ],
     onInfoGalleryScroll: function () {},

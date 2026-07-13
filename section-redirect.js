@@ -7,8 +7,8 @@
     "maquettes.html": "maquettes",
     "shows.html": "shows",
     "archives.html": "home",
-    "study.html": "study",
-    "spotify.html": "study",
+    "study.html": "home",
+    "spotify.html": "home",
   };
   const slug = map[path] || "home";
   const hash = slug === "home" ? "" : `#${slug}`;

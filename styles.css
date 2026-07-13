@@ -5,7 +5,6 @@
 :root {
   --paper: #f0f2f5;
   --ink: #1a1a1a;
-  --blob-size: clamp(200px, 32vw, 380px);
 }
 
 html,
@@ -25,222 +24,9 @@ body.home-anon {
   overflow: hidden;
 }
 
-/* ==========================================================================
-   THE BLOB - Lava lamp shape that drifts and reveals
-   ========================================================================== */
-
 #section-home {
   position: relative;
-  overflow: visible;
-  isolation: isolate;
-}
-
-.blob {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 100;
-  width: var(--blob-size);
-  height: var(--blob-size);
-  pointer-events: none;
-  will-change: transform;
-  transform: translateZ(0);
-  overflow: visible;
-}
-
-.blob.blob--pending {
-  opacity: 0;
-  visibility: hidden;
-}
-
-.blob.blob--ready {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.35s ease;
-}
-
-/* Pulse scales the whole lava-lamp shape; text layer stays a sibling outside pulse. */
-.blob__pulse {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  transform-origin: center center;
-}
-
-/* Clip frame: morphing border, painting inside; grows with pulse. */
-.blob__shape {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
-  background: #0a0a0a;
-  isolation: isolate;
-
-  /* Lava lamp morphing shape - slow organic morph */
-  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-  animation: blob-morph 32s ease-in-out infinite;
-
-  box-shadow:
-    0 25px 60px rgba(0, 0, 0, 0.2),
-    0 8px 20px rgba(0, 0, 0, 0.15),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-@keyframes blob-morph {
-  0%, 100% {
-    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-  }
-  14% {
-    border-radius: 40% 60% 70% 30% / 50% 60% 40% 50%;
-  }
-  28% {
-    border-radius: 50% 50% 40% 60% / 70% 40% 60% 30%;
-  }
-  42% {
-    border-radius: 70% 30% 50% 50% / 40% 50% 50% 60%;
-  }
-  57% {
-    border-radius: 30% 70% 60% 40% / 55% 45% 55% 45%;
-  }
-  71% {
-    border-radius: 55% 45% 45% 55% / 35% 65% 35% 65%;
-  }
-  85% {
-    border-radius: 45% 55% 55% 45% / 50% 40% 60% 50%;
-  }
-}
-
-@keyframes blob-pulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  15% {
-    transform: scale(1.1);
-  }
-  35% {
-    transform: scale(1.6);
-  }
-  50% {
-    transform: scale(1.55);
-  }
-  65% {
-    transform: scale(1.5);
-  }
-  80% {
-    transform: scale(1.15);
-  }
-}
-
-@keyframes blob-content-counter {
-  0%, 100% {
-    transform: scale(1);
-  }
-  15% {
-    transform: scale(0.91);
-  }
-  35% {
-    transform: scale(0.625);
-  }
-  50% {
-    transform: scale(0.645);
-  }
-  65% {
-    transform: scale(0.667);
-  }
-  80% {
-    transform: scale(0.87);
-  }
-}
-
-/* Painting inside blob */
-.blob__painting {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 0;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  pointer-events: none;
-}
-
-.blob__painting img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 52% 42%;
-}
-
-/* Text clip grows with pulse; same organic mask as the shape. */
-.blob__content {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  overflow: hidden;
-  transform-origin: center center;
-  border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
-  animation: blob-morph 32s ease-in-out infinite;
-}
-
-/* Ghost grid mirrors .anon — explicit copy, not the .anon class (100dvh breaks inside blob). */
-.blob__content-pos {
-  position: absolute;
-  left: 0;
-  top: 0;
-  margin: 0;
-  box-sizing: border-box;
-  padding:
-    max(12px, env(safe-area-inset-top))
-    max(14px, env(safe-area-inset-right))
-    max(12px, env(safe-area-inset-bottom))
-    max(14px, env(safe-area-inset-left));
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: 0;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.blob__content .anon__brand,
-.blob__content .anon__brand-strong {
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
-.blob__content .anon__hero {
-  color: #ffffff !important;
-}
-
-.blob__content .anon__title,
-.blob__content .anon__title-word {
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
-.blob__content .anon__tagline {
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
-.blob__content .anon__list-item,
-.blob__content .anon__list-name {
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
-.blob__content .anon__clock {
-  color: #ffffff !important;
-  text-shadow: none;
-}
-
-.blob__content a.anon__list-item {
-  pointer-events: none;
-  cursor: default;
 }
 
 /* ==========================================================================
@@ -257,9 +43,9 @@ body.home-anon {
   background: transparent;
   padding:
     max(12px, env(safe-area-inset-top))
-    max(14px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-right))
     max(12px, env(safe-area-inset-bottom))
-    max(14px, env(safe-area-inset-left));
+    max(8px, env(safe-area-inset-left));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 0;
@@ -300,7 +86,7 @@ body.home-anon {
   justify-content: center;
   min-height: 0;
   margin: 0;
-  padding: 0 clamp(6px, 2vw, 20px);
+  padding: 0 clamp(2px, 0.8vw, 10px);
   text-align: center;
 }
 
@@ -318,7 +104,7 @@ body.home-anon {
 .anon__title-word {
   display: block;
   width: 100%;
-  line-height: 0.82;
+  line-height: 0.78;
   letter-spacing: 0.02em;
   white-space: nowrap;
   -webkit-font-smoothing: antialiased;
@@ -326,21 +112,147 @@ body.home-anon {
   text-rendering: geometricPrecision;
 }
 
-/* Editorial stack — wide top & bottom, slightly smaller middle (like the reference) */
+.anon__title-letter {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  cursor: default;
+  perspective: 2.4em;
+  -webkit-perspective: 2.4em;
+  margin-inline: 0.01em;
+}
+
+/* Keeps real typographic metrics so letters don't collapse */
+.anon__flap__sizer {
+  display: block;
+  visibility: hidden;
+  line-height: 0.82em;
+  pointer-events: none;
+}
+
+.anon__flap {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.anon__flap__static {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.anon__flap__static--top {
+  top: 0;
+  z-index: 1;
+}
+
+.anon__flap__static--bottom {
+  bottom: 0;
+  z-index: 0;
+}
+
+.anon__flap__glyph {
+  display: block;
+  line-height: 0.82em;
+  color: var(--ink);
+}
+
+.anon__flap__glyph--bottom {
+  transform: translateY(-50%);
+}
+
+.anon__flap__hinge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  z-index: 3;
+  transform-origin: center bottom;
+  -webkit-transform-origin: center bottom;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.anon__flap__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--paper);
+}
+
+.anon__flap__face--front {
+  z-index: 2;
+}
+
+.anon__flap__face--back {
+  z-index: 1;
+  transform: rotateX(180deg);
+}
+
+.anon__title-letter.is-flipping .anon__flap__hinge {
+  -webkit-animation: title-split-flap 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: title-split-flap 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (max-width: 768px) {
+  .anon__title-letter.is-flipping .anon__flap__hinge {
+    -webkit-animation-duration: 0.9s;
+    animation-duration: 0.9s;
+  }
+}
+
+@keyframes title-split-flap {
+  from {
+    -webkit-transform: rotateX(0deg);
+    transform: rotateX(0deg);
+  }
+  to {
+    -webkit-transform: rotateX(-180deg);
+    transform: rotateX(-180deg);
+  }
+}
+
+@-webkit-keyframes title-split-flap {
+  from {
+    -webkit-transform: rotateX(0deg);
+    transform: rotateX(0deg);
+  }
+  to {
+    -webkit-transform: rotateX(-180deg);
+    transform: rotateX(-180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anon__title-letter.is-flipping .anon__flap__hinge {
+    animation: none;
+  }
+}
+
+/* Full-bleed editorial stack — each line near viewport width */
 .anon__title-word--terence {
-  font-size: clamp(3.2rem, 14.5vw, 11.5rem);
-  letter-spacing: 0.06em;
+  font-size: clamp(3rem, 17vw, 24rem);
+  letter-spacing: 0.04em;
 }
 
 .anon__title-word--ntsako {
-  font-size: clamp(2.4rem, 9.5vw, 7.25rem);
-  letter-spacing: 0.22em;
-  margin: clamp(-4px, -0.8vh, 0) 0;
+  font-size: clamp(2.4rem, 13.8vw, 19rem);
+  letter-spacing: 0.2em;
+  margin: -0.015em 0;
 }
 
 .anon__title-word--maluleke {
-  font-size: clamp(2.8rem, 12.8vw, 10rem);
-  letter-spacing: 0.04em;
+  font-size: clamp(2.7rem, 15.2vw, 21.5rem);
+  letter-spacing: 0.02em;
 }
 
 .anon__tagline {
@@ -437,38 +349,34 @@ a.anon__list-item:focus-visible {
    ========================================================================== */
 
 @media (min-width: 900px) {
-  :root {
-    --blob-size: clamp(240px, 24vw, 360px);
-  }
-
   .anon__title-word--terence {
-    font-size: clamp(4rem, 13vw, 12rem);
-    letter-spacing: 0.08em;
+    font-size: clamp(5rem, 16.5vw, 26rem);
+    letter-spacing: 0.05em;
   }
 
   .anon__title-word--ntsako {
-    font-size: clamp(3rem, 8.5vw, 7.5rem);
-    letter-spacing: 0.28em;
+    font-size: clamp(3.8rem, 13.2vw, 20rem);
+    letter-spacing: 0.24em;
   }
 
   .anon__title-word--maluleke {
-    font-size: clamp(3.5rem, 11.5vw, 10.5rem);
-    letter-spacing: 0.06em;
+    font-size: clamp(4.4rem, 14.6vw, 23rem);
+    letter-spacing: 0.03em;
   }
 }
 
 @media (max-height: 700px) {
   .anon__title-word--terence {
-    font-size: clamp(2.2rem, 11vh, 5rem);
+    font-size: clamp(2.6rem, 14vw, 9rem);
   }
 
   .anon__title-word--ntsako {
-    font-size: clamp(1.6rem, 7.5vh, 3.2rem);
+    font-size: clamp(2rem, 11vw, 7rem);
     letter-spacing: 0.16em;
   }
 
   .anon__title-word--maluleke {
-    font-size: clamp(2rem, 9.5vh, 4.2rem);
+    font-size: clamp(2.3rem, 12.5vw, 8rem);
   }
 
   .anon__tagline {
@@ -483,17 +391,5 @@ a.anon__list-item:focus-visible {
   .anon__list-item {
     font-size: clamp(11px, 1.8vh, 13px);
     line-height: 1.15;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .blob__shape {
-    animation: none;
-    border-radius: 50%;
-  }
-  
-  .blob {
-    left: 15vw;
-    top: 30vh;
   }
 }
