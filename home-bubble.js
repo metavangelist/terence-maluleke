@@ -1,6 +1,6 @@
 /**
- * Lava lamp blob that drifts slowly across the page.
- * Reveals the painting and inverted text when it passes over content.
+ * Lava lamp blob — fixed at page center.
+ * Reveals the painting and inverted text over the name.
  */
 (function initBlob() {
   const blob = document.getElementById("blob");
@@ -18,7 +18,6 @@
   const homeSection = document.getElementById("section-home");
   const anonSection = homeSection?.querySelector(".anon");
 
-  let driftActive = false;
   let started = false;
   let lastPoint = null;
   let layoutCache = null;
@@ -35,11 +34,6 @@
   gsap.set(blobContent, { scale: 1, transformOrigin: "50% 50%", force3D: true });
   if (blobContentPos) {
     gsap.set(blobContentPos, { x: 0, y: 0, scaleX: 1, scaleY: 1, force3D: true });
-  }
-
-  function rand(min, max) {
-    if (max <= min) return min;
-    return min + Math.random() * (max - min);
   }
 
   function layoutPx(value) {
@@ -194,47 +188,11 @@
     applySync(x, y);
   }
 
-  function pickWaypoint() {
-    const { minX, minY, maxX, maxY } = getAreaMetrics();
-
-    let best = null;
-    let bestDist = -1;
-
-    for (let i = 0; i < 60; i += 1) {
-      const x = rand(minX, maxX);
-      const y = rand(minY, maxY);
-
-      if (lastPoint) {
-        const dist = Math.hypot(x - lastPoint.x, y - lastPoint.y);
-        if (dist > bestDist) {
-          bestDist = dist;
-          best = { x, y };
-        }
-      } else {
-        best = { x, y };
-        break;
-      }
-    }
-
-    return best || {
-      x: (minX + maxX) * 0.5,
-      y: (minY + maxY) * 0.38,
-    };
-  }
-
-  function defaultStartPoint() {
+  function centerPoint() {
     const { minX, minY, maxX, maxY } = getAreaMetrics();
     return {
       x: (minX + maxX) * 0.5,
-      y: (minY + maxY) * 0.38,
-    };
-  }
-
-  function clampToArea(x, y) {
-    const { minX, minY, maxX, maxY } = getAreaMetrics();
-    return {
-      x: Math.min(maxX, Math.max(minX, x)),
-      y: Math.min(maxY, Math.max(minY, y)),
+      y: (minY + maxY) * 0.5,
     };
   }
 
@@ -243,81 +201,21 @@
 
     measureLayout();
 
-    const x = gsap.getProperty(blob, "x") || 0;
-    const y = gsap.getProperty(blob, "y") || 0;
-    const next = clampToArea(x, y);
+    const next = centerPoint();
     gsap.set(blob, { x: next.x, y: next.y, force3D: true });
     syncInnerContent(next.x, next.y);
     lastPoint = next;
   }
 
-  async function driftTo(point) {
-    return new Promise((resolve) => {
-      gsap.to(blob, {
-        x: point.x,
-        y: point.y,
-        duration: rand(8, 16),
-        ease: "power1.inOut",
-        force3D: true,
-        onUpdate() {
-          syncInnerContent(gsap.getProperty(blob, "x"), gsap.getProperty(blob, "y"));
-        },
-        onComplete: resolve,
-      });
-    });
-  }
-
-  async function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  async function driftLoop() {
-    while (driftActive) {
-      if (!isHomeVisible()) {
-        await wait(250);
-        continue;
-      }
-
-      const point = pickWaypoint();
-      lastPoint = point;
-      await driftTo(point);
-
-      if (!driftActive) break;
-      await wait(rand(3000, 8000));
-    }
-  }
-
-  function startDrift() {
-    if (reduceMotion || driftActive) return;
-    driftActive = true;
-    driftLoop();
-  }
-
   function stopDrift() {
-    driftActive = false;
     gsap.killTweensOf(blob);
   }
 
   function startPulse() {
-    if (reduceMotion || !blobPulse || pulseTimeline) return;
-
-    gsap.set(blobPulse, { scale: 1, transformOrigin: "50% 50%", force3D: true });
-
-    pulseTimeline = gsap.timeline({
-      repeat: -1,
-      defaults: { ease: "power1.inOut" },
-      onUpdate() {
-        syncGhostPosition(lastSyncX, lastSyncY);
-      },
-    });
-
-    pulseTimeline
-      .to(blobPulse, { scale: 1.1, duration: 3.6 })
-      .to(blobPulse, { scale: 1.6, duration: 4.8 })
-      .to(blobPulse, { scale: 1.55, duration: 3.6 })
-      .to(blobPulse, { scale: 1.5, duration: 3.6 })
-      .to(blobPulse, { scale: 1.15, duration: 3.6 })
-      .to(blobPulse, { scale: 1, duration: 4.8 });
+    /* size stays fixed — no pulse scaling */
+    if (blobPulse) gsap.set(blobPulse, { scale: 1, transformOrigin: "50% 50%", force3D: true });
+    gsap.set(blobContent, { scale: 1 });
+    if (blobContentPos) gsap.set(blobContentPos, { scaleX: 1, scaleY: 1 });
   }
 
   function stopPulse() {
@@ -342,14 +240,13 @@
 
     if (started) {
       repositionFromCurrent();
-      if (!reduceMotion && !driftActive) startDrift();
       if (!reduceMotion && !pulseTimeline) startPulse();
       return;
     }
 
     started = true;
 
-    const start = defaultStartPoint();
+    const start = centerPoint();
     lastPoint = start;
 
     gsap.set(blob, { x: start.x, y: start.y, force3D: true });
@@ -358,7 +255,6 @@
 
     if (reduceMotion) return;
     startPulse();
-    startDrift();
   }
 
   function whenLayoutReady(cb) {
@@ -434,7 +330,6 @@
           return;
         }
 
-        if (!reduceMotion && !driftActive) startDrift();
         if (!reduceMotion && !pulseTimeline) startPulse();
       },
       { root: scroller || null, threshold: [0, 0.2, 0.45] }
