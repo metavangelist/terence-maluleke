@@ -22,7 +22,7 @@ body.site-scroll {
   overflow: hidden;
   background: var(--paper);
   color: var(--ink);
-  overscroll-behavior: none;
+  overscroll-behavior: auto;
 }
 
 body.site-scroll.home-anon {
@@ -40,7 +40,7 @@ body.site-scroll.home-anon {
   scroll-snap-type: y mandatory;
   scroll-behavior: auto;
   background: transparent;
-  overscroll-behavior: none;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overflow-anchor: none;
@@ -87,7 +87,7 @@ body.site-scroll.home-anon {
   overflow: hidden;
   background: var(--paper);
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
   touch-action: pan-y;
 }
 
@@ -128,7 +128,7 @@ body.site-scroll.home-anon {
   box-sizing: border-box;
 }
 
-/* Gallery cluster sections share one fixed cross-video behind the scroller */
+/* Gallery cluster sections */
 #section-gallery,
 #section-prints,
 #section-maquettes {
@@ -140,15 +140,15 @@ body.site-scroll.home-anon {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: #1c1c1c;
 }
 
 #section-gallery {
-  background: transparent;
+  background: #1c1c1c;
 }
 
 #section-maquettes {
-  background: transparent;
+  background: #1c1c1c;
 }
 
 #section-home {
@@ -197,9 +197,10 @@ body.site-scroll.home-anon {
   margin: 0;
 }
 
-/* Gallery must be able to scroll internally */
+/* Gallery must be able to scroll internally without dragging the page */
 #galleryGrid,
 #printsGrid,
+#maquettesGrid,
 .gallery-grid,
 .info-gallery__gallery-scroll {
   touch-action: pan-y;

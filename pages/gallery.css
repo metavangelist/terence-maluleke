@@ -27,7 +27,7 @@
 
 #section-gallery,
 #section-prints {
-  background: transparent;
+  background: #1c1c1c;
   --gr-glass-blur: 14px;
   --gr-glass-saturate: 1;
   --gr-glass-bg: rgba(28, 28, 28, 0.72);
@@ -35,7 +35,7 @@
 }
 
 #section-maquettes {
-  background: transparent;
+  background: #1c1c1c;
   --gr-glass-blur: 14px;
   --gr-glass-saturate: 1;
   --gr-glass-bg: rgba(28, 28, 28, 0.72);

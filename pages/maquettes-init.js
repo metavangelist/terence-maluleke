@@ -34,7 +34,7 @@
       medium: "Assamblage",
       dimensions: "",
       price: "",
-      sold: false,
+      sold: true,
       remoteViewSrc: "https://cdn.sanity.io/images/um9my25h/production/1607a6ca7a960eba5bb01dc91d410b21eb2514e0-2483x2723.png?w=2400&fm=png&q=90",
       remotePreviewSrc: "https://cdn.sanity.io/images/um9my25h/production/1607a6ca7a960eba5bb01dc91d410b21eb2514e0-2483x2723.png?w=720&fm=png&q=90",
     },
@@ -46,6 +46,17 @@
       dimensions: "7 x 3.5 cm",
       price: "ZAR 20000 USD 1250",
       sold: true,
+    },
+    {
+      file: "within.png",
+      title: "within",
+      year: "2026",
+      medium: "Assamblage",
+      dimensions: "11 X 11 cm",
+      price: "",
+      sold: true,
+      remoteViewSrc: "https://cdn.sanity.io/images/um9my25h/production/343b2929cd27fc0c4922f70a690f83ec52b3eb99-1400x1460.png?w=2400&fm=png&q=90",
+      remotePreviewSrc: "https://cdn.sanity.io/images/um9my25h/production/343b2929cd27fc0c4922f70a690f83ec52b3eb99-1400x1460.png?w=720&fm=png&q=90",
     },
   ];
 
@@ -87,8 +98,9 @@
   const MAQ_FIT_MAX_RETRIES = 32;
   const MAQ_DETAIL_HEAD_RESERVE = 88;
   const MAQ_NEIGHBOR_EDGE_HITS_REQUIRED = 1;
-  const MAQ_NEIGHBOR_EDGE_ARM_DELAY_MS = 200;
-  const MAQ_NEIGHBOR_EXIT_ARM_DELAY_MS = 120;
+  const MAQ_NEIGHBOR_EDGE_ARM_DELAY_MS = 0;
+  const MAQ_NEIGHBOR_EXIT_ARM_DELAY_MS = 0;
+  const MAQ_SWIPE_THRESHOLD = 24;
 
   let maquettesEdgeHandoff = false;
   let maquettesSectionEnteredAt = 0;
@@ -801,15 +813,12 @@
 
   function markMaquettesSectionEntered() {
     maquettesSectionEnteredAt = Date.now();
-    maqExitToCalendarArmed = false;
+    maqExitToCalendarArmed = true;
     maqIndexScrollReady = false;
     window.clearTimeout(maqExitArmTimer);
     fixMaquettesHeights();
     syncMaquettesIndexPageHeights();
     ensureMaquettesIndexScrollReadySoon();
-    maqExitArmTimer = window.setTimeout(() => {
-      maqExitToCalendarArmed = true;
-    }, MAQ_NEIGHBOR_EXIT_ARM_DELAY_MS);
   }
 
   function disarmMaqExitToCalendar() {
@@ -817,7 +826,7 @@
     window.clearTimeout(maqExitArmTimer);
     maqExitArmTimer = window.setTimeout(() => {
       maqExitToCalendarArmed = true;
-    }, MAQ_NEIGHBOR_EXIT_ARM_DELAY_MS);
+    }, 0);
   }
 
   function onMaquettesGridPageChange() {
@@ -1654,8 +1663,12 @@
     const scroller = document.getElementById("maquettesIndexScroller");
     if (!scroller) return;
     const page = catalogPageForIndex(index);
-    const pageEl = scroller.querySelector(`.gallery-index__page[data-page="${page}"]`);
-    if (pageEl) pageEl.scrollIntoView({ block: "start" });
+    const pageHeight = getMaquettesIndexPageHeight(scroller);
+    if (!pageHeight) return;
+
+    // Set scrollTop on the internal scroller only — scrollIntoView would
+    // also move #siteScroller and leave a grey gap under the nav.
+    scroller.scrollTop = Math.max(0, page * pageHeight);
   }
 
   function showGrid(options = {}) {
@@ -1784,17 +1797,12 @@
       const visuallyAtTop = isMaquettesGridVisuallyAtTop(scroller);
       const atBottom = visuallyAtBottom || isMaquettesGridAtBottom(scroller);
       const atTop = visuallyAtTop || isMaquettesGridAtTop(scroller);
-      
-      if (targetSlug === "calendar") {
-        if (!atBottom) return;
-        if (!maqExitToCalendarArmed) return;
-      }
+
+      if (targetSlug === "calendar" && !atBottom) return;
       if (targetSlug === "prints" && !atTop) return;
-      
+
       prepSectionHandoff(targetSlug);
-      maquettesEdgeHandoff = true;
       window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
-      window.setTimeout(() => { maquettesEdgeHandoff = false; }, 1040);
     }
 
     scroller.addEventListener(
@@ -1802,7 +1810,6 @@
       (event) => {
         if (document.body.dataset.currentSection !== "maquettes") return;
         if (viewMode !== "grid") return;
-        if (maquettesEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
         const scrollReady = isMaquettesIndexScrollReady();
         
@@ -1826,20 +1833,6 @@
         if ((atTop || atTopVisual) && event.deltaY < 0) {
           event.preventDefault();
           event.stopPropagation();
-
-          if (!maquettesEdgesArmed()) return;
-
-          const now = Date.now();
-          if (now - gridUpLastTime < GRID_EDGE_DEBOUNCE_MS) return;
-          gridUpLastTime = now;
-
-          gridUpHitCount += 1;
-          window.clearTimeout(gridUpHitTimer);
-          gridUpHitTimer = window.setTimeout(() => { gridUpHitCount = 0; }, 1200);
-
-          if (gridUpHitCount < MAQ_NEIGHBOR_EDGE_HITS_REQUIRED) return;
-
-          gridUpHitCount = 0;
           doGridHandoff("prints");
           return;
         }
@@ -1847,73 +1840,11 @@
         if ((atBottom || atBottomVisual) && event.deltaY > 0) {
           event.preventDefault();
           event.stopPropagation();
-
-          if (!maqExitToCalendarArmed) return;
-          if (!maquettesEdgesArmed()) return;
-
           doGridHandoff("calendar");
+          return;
         }
       },
       { passive: false }
-    );
-
-    let indexTouchStartY = 0;
-
-    scroller.addEventListener(
-      "touchstart",
-      (event) => {
-        if (viewMode !== "grid") return;
-        indexTouchStartY = event.touches[0]?.clientY ?? 0;
-      },
-      { passive: true }
-    );
-
-    let touchUpHitCount = 0;
-    let touchUpHitTimer = 0;
-
-    scroller.addEventListener(
-      "touchend",
-      (event) => {
-        if (document.body.dataset.currentSection !== "maquettes") return;
-        if (viewMode !== "grid") return;
-        if (maquettesEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
-        
-        const scrollReady = isMaquettesIndexScrollReady();
-        if (!scrollReady) {
-          ensureMaquettesIndexScrollReadySoon();
-        }
-
-        const touch = event.changedTouches[0];
-        if (!touch) return;
-
-        const deltaY = touch.clientY - indexTouchStartY;
-        const atTopVisual = isMaquettesGridVisuallyAtTop(scroller);
-        const atBottomVisual = isMaquettesGridVisuallyAtBottom(scroller);
-        const atTop = scrollReady ? isMaquettesGridAtTop(scroller) : atTopVisual;
-        const atBottom = scrollReady ? isMaquettesGridAtBottom(scroller) : atBottomVisual;
-
-        if ((atTop || atTopVisual) && deltaY > 36) {
-          if (!maquettesEdgesArmed()) return;
-
-          touchUpHitCount += 1;
-          window.clearTimeout(touchUpHitTimer);
-          touchUpHitTimer = window.setTimeout(() => { touchUpHitCount = 0; }, 1200);
-
-          if (touchUpHitCount < MAQ_NEIGHBOR_EDGE_HITS_REQUIRED) return;
-
-          touchUpHitCount = 0;
-          doGridHandoff("prints");
-          return;
-        }
-
-        if ((atBottom || atBottomVisual) && deltaY < -36) {
-          if (!maqExitToCalendarArmed) return;
-          if (!maquettesEdgesArmed()) return;
-
-          doGridHandoff("calendar");
-        }
-      },
-      { passive: true }
     );
   }
 

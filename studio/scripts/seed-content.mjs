@@ -149,29 +149,11 @@ async function seed() {
 
   const tx = client.transaction();
 
-  const homeBubbleArtwork = await uploadImage(
-    join(root, "assets", "images"),
-    "DSC01668_2.jpg"
-  );
-
   tx.createOrReplace({
     _id: "siteSettings",
     _type: "siteSettings",
     siteTitle: "Terence Ntsako Maluleke",
     enquiryEmail: "Contact@maluleke.art",
-  });
-
-  tx.createOrReplace({
-    _id: "homeBubble",
-    _type: "homeBubble",
-    ...(homeBubbleArtwork
-      ? {
-          defaultArtwork: {
-            ...homeBubbleArtwork,
-            hotspot: { x: 0.52, y: 0.42, height: 0.45, width: 0.45 },
-          },
-        }
-      : {}),
   });
 
   tx.createOrReplace({

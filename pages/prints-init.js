@@ -138,14 +138,15 @@ let galleryEdgeHandoff = false;
 let galleryEdgeHitCount = 0;
 let galleryEdgeHitTimer = 0;
 let gallerySectionEnteredAt = 0;
-const GALLERY_EDGE_HITS_REQUIRED = 4;
-const GALLERY_EDGE_ARM_DELAY_MS = 1400;
-const GALLERY_WHEEL_THRESHOLD = 40;
+const GALLERY_EDGE_HITS_REQUIRED = 1;
+const GALLERY_EDGE_ARM_DELAY_MS = 0;
+const GALLERY_WHEEL_THRESHOLD = 24;
 const GALLERY_NEIGHBOR_EDGE_HITS_REQUIRED = 1;
-const GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS = 200;
-const GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS = 120;
+const GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS = 0;
+const GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS = 0;
 const GALLERY_EXIT_ARM_DELAY_MS = GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS;
-const PRINTS_GRID_EXIT_ARM_DELAY_MS = 480;
+const PRINTS_GRID_EXIT_ARM_DELAY_MS = 0;
+const GALLERY_SWIPE_THRESHOLD = 24;
 let printsExitToMaquettesArmed = false;
 let galleryExitArmTimer = 0;
 let printsGridBottomWheelAccum = 0;
@@ -311,7 +312,7 @@ function galleryEdgesArmedFor(targetSlug) {
 function markPrintsSectionEntered() {
   gallerySectionEnteredAt = Date.now();
   galleryEdgeHitCount = 0;
-  printsExitToMaquettesArmed = false;
+  printsExitToMaquettesArmed = true;
   printsGridBottomWheelAccum = 0;
   printsIndexScrollReady = false;
   window.clearTimeout(galleryExitArmTimer);
@@ -320,9 +321,6 @@ function markPrintsSectionEntered() {
   syncGalleryIndexPageHeights();
   ensurePrintsIndexScrollReadySoon();
   galleryLastGridPageSeen = -1;
-  galleryExitArmTimer = window.setTimeout(() => {
-    printsExitToMaquettesArmed = true;
-  }, PRINTS_GRID_EXIT_ARM_DELAY_MS);
 }
 
 function galleryEdgesArmed() {
@@ -330,10 +328,7 @@ function galleryEdgesArmed() {
 }
 
 function printsMaquettesHandoffReady() {
-  return (
-    printsExitToMaquettesArmed &&
-    Date.now() - gallerySectionEnteredAt >= PRINTS_GRID_EXIT_ARM_DELAY_MS
-  );
+  return printsExitToMaquettesArmed;
 }
 
 function getGalleryGridPageIndex() {
@@ -356,7 +351,7 @@ function disarmPrintsExitToMaquettes() {
   window.clearTimeout(galleryExitArmTimer);
   galleryExitArmTimer = window.setTimeout(() => {
     printsExitToMaquettesArmed = true;
-  }, PRINTS_GRID_EXIT_ARM_DELAY_MS);
+  }, 0);
 }
 
 function onGalleryGridPageChange() {
@@ -687,7 +682,20 @@ function scrollPillToIndex(index, smooth = false) {
   if (pillIndexAtCenter(nav) === index) return;
 
   pillScrollSyncing = true;
-  pill.scrollIntoView({ block: "center", behavior: smooth ? "smooth" : "auto" });
+
+  // Never use scrollIntoView — it also scrolls #siteScroller and desyncs sections.
+  const navRect = nav.getBoundingClientRect();
+  const pillRect = pill.getBoundingClientRect();
+  const delta =
+    pillRect.top + pillRect.height / 2 - (navRect.top + navRect.height / 2);
+  const nextTop = nav.scrollTop + delta;
+
+  if (smooth && typeof nav.scrollTo === "function") {
+    nav.scrollTo({ top: nextTop, behavior: "smooth" });
+  } else {
+    nav.scrollTop = nextTop;
+  }
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => { pillScrollSyncing = false; });
   });
@@ -992,8 +1000,12 @@ function scrollGridToIndex(index) {
   if (!scroller) return;
 
   const page = catalogPageForIndex(resolveGalleryNavIndex(index));
-  const pageEl = scroller.querySelector(`.gallery-index__page[data-page="${page}"]`);
-  if (pageEl) pageEl.scrollIntoView({ block: "start" });
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  if (!pageHeight) return;
+
+  // Set scrollTop on the internal scroller only — scrollIntoView would
+  // also move #siteScroller and leave a grey gap under the nav.
+  scroller.scrollTop = Math.max(0, page * pageHeight);
 }
 
 function showGalleryGrid(options = {}) {
@@ -1166,7 +1178,7 @@ function initPrintsPageNav() {
     window.clearTimeout(animTimer);
     galleryEdgeHandoff = true;
     window.siteScroll?.scrollToSection?.("maquettes", { resetScroll: false });
-    window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
+    window.setTimeout(() => { galleryEdgeHandoff = false; }, 520);
   }
 
   function clampIndex(index) {
@@ -1495,21 +1507,12 @@ function initPrintsIndexNav() {
     const visuallyAtTop = isGalleryGridVisuallyAtTop(scroller);
     const atBottom = visuallyAtBottom || isGalleryGridAtBottom(scroller);
     const atTop = visuallyAtTop || isGalleryGridAtTop(scroller);
-    
-    if (targetSlug === "maquettes") {
-      if (!atBottom) return;
-      if (!printsMaquettesHandoffReady()) return;
-      if (isGalleryIndexScrollReady()) {
-        syncGalleryIndexPageHeights();
-        clampGalleryIndexScroll(scroller);
-      }
-    }
+
+    if (targetSlug === "maquettes" && !atBottom) return;
     if (targetSlug === "paintings" && !atTop) return;
-    
+
     prepSectionHandoff(targetSlug);
-    galleryEdgeHandoff = true;
     window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
-    window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
   }
 
   scroller.addEventListener(
@@ -1517,7 +1520,6 @@ function initPrintsIndexNav() {
     (event) => {
       if (document.body.dataset.currentSection !== "prints") return;
       if (galleryViewMode !== "grid") return;
-      if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
       const scrollReady = isGalleryIndexScrollReady();
       
@@ -1541,21 +1543,6 @@ function initPrintsIndexNav() {
       if ((atTop || atTopVisual) && event.deltaY < 0) {
         event.preventDefault();
         event.stopPropagation();
-
-        if (!galleryEdgesArmedFor("paintings")) return;
-
-        const now = Date.now();
-        if (now - gridUpLastTime < GRID_EDGE_DEBOUNCE_MS) return;
-        gridUpLastTime = now;
-
-        gridDownHitCount = 0;
-        gridUpHitCount += 1;
-        window.clearTimeout(gridUpHitTimer);
-        gridUpHitTimer = window.setTimeout(() => { gridUpHitCount = 0; }, 1200);
-
-        if (gridUpHitCount < edgeHitsRequired("paintings")) return;
-
-        gridUpHitCount = 0;
         doGridHandoff("paintings");
         return;
       }
@@ -1563,89 +1550,11 @@ function initPrintsIndexNav() {
       if ((atBottom || atBottomVisual) && event.deltaY > 0) {
         event.preventDefault();
         event.stopPropagation();
-
-        if (!galleryEdgesArmedFor("maquettes")) return;
-
-        printsGridBottomWheelAccum += event.deltaY;
-        window.clearTimeout(printsGridBottomWheelResetTimer);
-        printsGridBottomWheelResetTimer = window.setTimeout(() => {
-          printsGridBottomWheelAccum = 0;
-        }, 150);
-
-        if (printsGridBottomWheelAccum < GALLERY_WHEEL_THRESHOLD) return;
-
-        printsGridBottomWheelAccum = 0;
         doGridHandoff("maquettes");
         return;
       }
-
-      event.stopPropagation();
     },
     { passive: false }
-  );
-
-  let indexTouchStartY = 0;
-
-  scroller.addEventListener(
-    "touchstart",
-    (event) => {
-      if (galleryViewMode !== "grid") return;
-      indexTouchStartY = event.touches[0]?.clientY ?? 0;
-    },
-    { passive: true }
-  );
-
-  let touchDownHitCount = 0;
-  let touchDownHitTimer = 0;
-  let touchUpHitCount = 0;
-  let touchUpHitTimer = 0;
-  let touchBottomHitCount = 0;
-  let touchBottomHitTimer = 0;
-
-  scroller.addEventListener(
-    "touchend",
-    (event) => {
-      if (document.body.dataset.currentSection !== "prints") return;
-      if (galleryViewMode !== "grid") return;
-      if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
-      
-      const scrollReady = isGalleryIndexScrollReady();
-      if (!scrollReady) {
-        ensurePrintsIndexScrollReadySoon();
-      }
-
-      const touch = event.changedTouches[0];
-      if (!touch) return;
-
-      const deltaY = touch.clientY - indexTouchStartY;
-      const atTopVisual = isGalleryGridVisuallyAtTop(scroller);
-      const atBottomVisual = isGalleryGridVisuallyAtBottom(scroller);
-      const atTop = scrollReady ? isGalleryGridAtTop(scroller) : atTopVisual;
-      const atBottom = scrollReady ? isGalleryGridAtBottom(scroller) : atBottomVisual;
-
-      if ((atTop || atTopVisual) && deltaY > 36) {
-        if (!galleryEdgesArmedFor("paintings")) return;
-
-        touchDownHitCount = 0;
-        touchUpHitCount += 1;
-        window.clearTimeout(touchUpHitTimer);
-        touchUpHitTimer = window.setTimeout(() => { touchUpHitCount = 0; }, 1200);
-
-        if (touchUpHitCount < edgeHitsRequired("paintings")) return;
-
-        touchUpHitCount = 0;
-        doGridHandoff("paintings");
-        return;
-      }
-
-      if ((atBottom || atBottomVisual) && deltaY < -36) {
-        if (!galleryEdgesArmedFor("maquettes")) return;
-
-        touchBottomHitCount = 0;
-        doGridHandoff("maquettes");
-      }
-    },
-    { passive: true }
   );
 }
 

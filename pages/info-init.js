@@ -8,71 +8,167 @@ const INFO_ARCHIVE_VIDEOS = [
   "videos/info/archives/archive-fathers-graduation-party.mp4",
 ];
 
-const starVideoReadyMap = new Map();
 let infoStarVideosReadyPromise = null;
+let siteMediaReadyPromise = null;
+const videoUrlReadyCache = new Map();
 
 function starVideoSource(video) {
-  return video.dataset.starSrc || video.getAttribute("src") || "";
+  if (!video) return "";
+  return (
+    video.dataset.starSrc ||
+    video.getAttribute("src") ||
+    video.currentSrc ||
+    video.querySelector("source")?.getAttribute("src") ||
+    ""
+  );
 }
 
-function preloadInfoVideo(video) {
+function normalizeVideoUrl(url) {
+  if (!url) return "";
+  try {
+    return new URL(url, window.location.href).href;
+  } catch {
+    return url;
+  }
+}
+
+function configureMutedLoopVideo(video, preload = "auto") {
   if (!video) return;
+
+  const previousPreload = video.getAttribute("preload") || video.preload || "";
 
   video.muted = true;
   video.defaultMuted = true;
   video.playsInline = true;
   video.loop = true;
-  video.preload = "metadata";
-  video.setAttribute("preload", "metadata");
+  video.preload = preload;
+  video.setAttribute("preload", preload);
   video.setAttribute("muted", "");
   video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
   video.setAttribute("loop", "");
+
+  // Upgrading from metadata/none to auto needs an explicit load kick.
+  if (
+    preload === "auto" &&
+    previousPreload !== "auto" &&
+    video.readyState < 2 &&
+    (video.currentSrc || video.querySelector("source") || video.getAttribute("src"))
+  ) {
+    try {
+      video.load();
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
-function waitForStarVideoReady(video) {
+function waitForVideoFrame(video, timeoutMs = 20000) {
   return new Promise((resolve) => {
-    const finish = () => resolve(video);
+    let settled = false;
 
-    if (video.readyState >= 1) {
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve(video);
+    };
+
+    if (!video) {
       finish();
       return;
     }
 
-    const onReady = () => {
-      video.removeEventListener("loadedmetadata", onReady);
-      video.removeEventListener("canplay", onReady);
-      video.removeEventListener("error", onReady);
+    if (video.readyState >= 2) {
       finish();
-    };
+      return;
+    }
 
-    video.addEventListener("loadedmetadata", onReady, { once: true });
+    const onReady = () => finish();
+    video.addEventListener("loadeddata", onReady, { once: true });
     video.addEventListener("canplay", onReady, { once: true });
     video.addEventListener("error", onReady, { once: true });
-    preloadInfoVideo(video);
-    window.setTimeout(finish, 3000);
+    window.setTimeout(finish, timeoutMs);
   });
 }
 
-async function primeStarVideoElement(video) {
-  const src = starVideoSource(video);
-  if (!src) return video;
+async function tryPlayVideo(video) {
+  if (!video || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  if (!video.src && src) {
-    video.src = src;
+  try {
+    await video.play();
+  } catch {
+    /* autoplay may stay blocked until visible */
+  }
+}
+
+function ensureVideoHasSource(video, url) {
+  if (!video || !url) return;
+
+  const absolute = normalizeVideoUrl(url);
+  const current = normalizeVideoUrl(video.currentSrc || video.getAttribute("src") || "");
+
+  if (current === absolute) {
+    configureMutedLoopVideo(video, "auto");
+    return;
   }
 
-  preloadInfoVideo(video);
-  await waitForStarVideoReady(video);
+  // Prefer attribute src for star videos; keep <source> children for cube/bg.
+  if (video.dataset.infoStarVideo !== undefined || video.classList.contains("info-star__video")) {
+    video.setAttribute("src", url);
+    video.src = url;
+  } else if (!video.querySelector("source") && !video.getAttribute("src")) {
+    video.setAttribute("src", url);
+    video.src = url;
+  }
 
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    try {
-      await video.play();
-    } catch {
-      /* autoplay warmup — ok if blocked until visible */
-    }
+  configureMutedLoopVideo(video, "auto");
+}
+
+async function warmVideoElement(video, { timeoutMs = 20000 } = {}) {
+  if (!video) return null;
+
+  const url = starVideoSource(video);
+  const cacheKey = normalizeVideoUrl(url) || `el:${video.id || Math.random()}`;
+
+  ensureVideoHasSource(video, url);
+  configureMutedLoopVideo(video, "auto");
+
+  let primaryPromise = videoUrlReadyCache.get(cacheKey);
+
+  if (!primaryPromise) {
+    // Register immediately so parallel callers with the same URL await one load.
+    primaryPromise = waitForVideoFrame(video, timeoutMs).then(() => true);
+    videoUrlReadyCache.set(cacheKey, primaryPromise);
+    await primaryPromise;
+    return video;
+  }
+
+  await primaryPromise;
+
+  if (video.readyState < 2) {
+    await waitForVideoFrame(video, Math.min(timeoutMs, 8000));
   }
 
   return video;
+}
+
+async function warmVideoList(videos, { concurrency = 4, timeoutMs = 20000 } = {}) {
+  const queue = videos.filter(Boolean);
+  if (!queue.length) return;
+
+  let index = 0;
+
+  async function worker() {
+    while (index < queue.length) {
+      const video = queue[index];
+      index += 1;
+      await warmVideoElement(video, { timeoutMs });
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, queue.length) }, () => worker())
+  );
 }
 
 function markInfoStarsReady() {
@@ -83,47 +179,89 @@ function markInfoStarsReady() {
   document.dispatchEvent(new CustomEvent("info-stars:ready"));
 }
 
+function collectSiteVideos() {
+  const homeStars = [
+    ...document.querySelectorAll("#section-home .info-star__video[data-info-star-video]"),
+  ];
+  const infoStars = [
+    ...document.querySelectorAll("#section-info .info-star__video[data-info-star-video]"),
+  ];
+  const infoBg = document.getElementById("infoBgVideo");
+  const cubeVideos = [...document.querySelectorAll("#section-info .info-cube__video[data-info-video]")];
+  const exhibVideo = document.getElementById("exhibVideo");
+
+  return { homeStars, infoStars, infoBg, cubeVideos, exhibVideo };
+}
+
 function ensureInfoStarVideosReady() {
   if (infoStarVideosReadyPromise) return infoStarVideosReadyPromise;
 
-  infoStarVideosReadyPromise = (async () => {
+  infoStarVideosReadyPromise = ensureSiteMediaReady().catch(() => {
+    markInfoStarsReady();
+    return true;
+  });
+  window.infoStarVideosReady = infoStarVideosReadyPromise;
+  return infoStarVideosReadyPromise;
+}
+
+async function ensureSiteMediaReady() {
+  if (siteMediaReadyPromise) return siteMediaReadyPromise;
+
+  siteMediaReadyPromise = (async () => {
+    const {
+      homeStars,
+      infoStars,
+      infoBg,
+      cubeVideos,
+      exhibVideo,
+    } = collectSiteVideos();
+
+    [...homeStars, ...infoStars].forEach((video) => {
+      ensureVideoHasSource(video, starVideoSource(video));
+    });
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       markInfoStarsReady();
       return true;
     }
 
-    const infoVideos = [...document.querySelectorAll("#section-info .info-star__video[data-info-star-video]")];
-    const homeVideos = [...document.querySelectorAll("#section-home .info-star__video[data-info-star-video]")];
-
-    if (!infoVideos.length && !homeVideos.length) {
-      markInfoStarsReady();
-      return true;
-    }
-
-    await Promise.all(infoVideos.map((video) => primeStarVideoElement(video)));
+    await warmVideoList(homeStars, { concurrency: 6, timeoutMs: 5000 });
     markInfoStarsReady();
+    homeStars.forEach((video) => tryPlayVideo(video));
 
-    if (homeVideos.length) {
-      Promise.all(homeVideos.map((video) => primeStarVideoElement(video))).catch(() => {});
-    }
+    void (async () => {
+      await Promise.all([
+        warmVideoList(infoStars, { concurrency: 3, timeoutMs: 20000 }),
+        warmVideoElement(infoBg, { timeoutMs: 15000 }),
+      ]);
+      [...infoStars, infoBg].forEach((video) => tryPlayVideo(video));
+
+      await Promise.all([
+        warmVideoList(cubeVideos, { concurrency: 3, timeoutMs: 25000 }),
+        warmVideoElement(exhibVideo, { timeoutMs: 25000 }),
+      ]);
+      cubeVideos.forEach((video) => tryPlayVideo(video));
+      tryPlayVideo(exhibVideo);
+    })().catch(() => {});
+
     return true;
   })().catch(() => {
     markInfoStarsReady();
     return true;
   });
 
-  window.infoStarVideosReady = infoStarVideosReadyPromise;
-  return infoStarVideosReadyPromise;
+  return siteMediaReadyPromise;
 }
 
 window.warmInfoStarVideos = ensureInfoStarVideosReady;
+window.ensureSiteMediaReady = ensureSiteMediaReady;
 window.INFO_ARCHIVE_VIDEOS = INFO_ARCHIVE_VIDEOS;
 
 function initInfoStars() {
   document
     .querySelectorAll("#section-info .info-star__video, #section-home .info-star__video")
     .forEach((video) => {
-      preloadInfoVideo(video);
+      ensureVideoHasSource(video, starVideoSource(video));
     });
 }
 
@@ -338,6 +476,7 @@ function initInfoBgVideo() {
   bg.defaultMuted = true;
   bg.loop = true;
   bg.playsInline = true;
+  bg.preload = "auto";
   bg.setAttribute("loop", "");
   bg.setAttribute("muted", "");
 

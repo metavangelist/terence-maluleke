@@ -117,22 +117,24 @@ setInterval(tickNow, 1000);
 
   if (reduceMotion || !letters.length) return;
 
+  const AUTO_FLAP_MS = 60_000;
   let introPlayed = false;
+
+  function runStaggeredFlip(delayMs = INTRO_DELAY_MS) {
+    letters.forEach((letter, index) => {
+      window.setTimeout(() => flipLetter(letter), delayMs + index * FLIP_STAGGER_MS);
+    });
+  }
 
   function runIntroFlip() {
     if (introPlayed) return;
-    // Don't flip under the loader — mobile loads often take longer than a short timeout
     if (document.body.classList.contains("is-loading")) return;
     introPlayed = true;
-
-    letters.forEach((letter, index) => {
-      window.setTimeout(() => flipLetter(letter), INTRO_DELAY_MS + index * FLIP_STAGGER_MS);
-    });
+    runStaggeredFlip();
   }
 
   if (document.body.classList.contains("is-loading")) {
     document.addEventListener("site:ready", runIntroFlip, { once: true });
-    // Fallback if site:ready was missed — wait until loader is gone
     const poll = window.setInterval(() => {
       if (document.body.classList.contains("is-loading")) return;
       window.clearInterval(poll);
@@ -142,4 +144,9 @@ setInterval(tickNow, 1000);
   } else {
     requestAnimationFrame(() => runIntroFlip());
   }
+
+  window.setInterval(() => {
+    if (document.body.classList.contains("is-loading")) return;
+    runStaggeredFlip(0);
+  }, AUTO_FLAP_MS);
 })();

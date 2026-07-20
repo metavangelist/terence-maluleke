@@ -1,9 +1,10 @@
 (function () {
   const loader = document.getElementById("siteLoader");
   const bar = document.getElementById("siteLoaderBar");
-  const MIN_MS = 1400;
-  const MAX_MS = 180000;
-  const PRELOAD_CONCURRENCY = 8;
+  const MIN_MS = 320;
+  const MAX_MS = 12000;
+  const MEDIA_WAIT_CAP_MS = 5500;
+  const PRELOAD_CONCURRENCY = 10;
 
   const track = loader?.querySelector('[role="progressbar"]');
 
@@ -26,25 +27,6 @@
     });
   }
 
-  function loadVideo(src) {
-    return new Promise((resolve) => {
-      const video = document.createElement("video");
-      const done = () => {
-        video.removeAttribute("src");
-        video.load();
-        resolve();
-      };
-      video.muted = true;
-      video.preload = "metadata";
-      video.playsInline = true;
-      video.addEventListener("loadedmetadata", done, { once: true });
-      video.addEventListener("canplay", done, { once: true });
-      video.addEventListener("error", done, { once: true });
-      window.setTimeout(done, 3000);
-      video.src = src;
-    });
-  }
-
   function waitForReady(eventName, readyFlag, timeoutMs) {
     return new Promise((resolve) => {
       if (window[readyFlag]) {
@@ -56,18 +38,53 @@
     });
   }
 
-  function waitForGallery() {
-    return waitForReady("gallery:ready", "galleryCatalogReady", 12000);
+  function waitForGalleryCatalog() {
+    return waitForReady("gallery:ready", "galleryCatalogReady", 15000);
   }
 
-  function waitForPrints() {
-    return waitForReady("prints:ready", "printsCatalogReady", 12000);
+  function waitForPrintsCatalog() {
+    return waitForReady("prints:ready", "printsCatalogReady", 15000);
   }
 
-  function waitForMaquettes() {
-    return waitForReady("maquettes:ready", "maquettesCatalogReady", 8000);
+  function waitForMaquettesCatalog() {
+    return waitForReady("maquettes:ready", "maquettesCatalogReady", 12000);
   }
 
+  function starsAreVisible() {
+    const home = document.getElementById("homeStars");
+    const info = document.getElementById("infoStars");
+    return Boolean(
+      home?.classList.contains("is-ready") && info?.classList.contains("is-ready")
+    );
+  }
+
+  async function waitForSiteMedia() {
+    const mediaPromise = (async () => {
+      if (typeof window.ensureSiteMediaReady === "function") {
+        await window.ensureSiteMediaReady();
+        return;
+      }
+
+      if (window.infoStarVideosReady) {
+        await window.infoStarVideosReady;
+        return;
+      }
+
+      await new Promise((resolve) => {
+        if (starsAreVisible()) {
+          resolve();
+          return;
+        }
+        document.addEventListener("info-stars:ready", resolve, { once: true });
+        window.setTimeout(resolve, MEDIA_WAIT_CAP_MS);
+      });
+    })();
+
+    await Promise.race([
+      mediaPromise,
+      new Promise((resolve) => window.setTimeout(resolve, MEDIA_WAIT_CAP_MS)),
+    ]);
+  }
 
   function collectArtworkUrls() {
     const previews = [];
@@ -97,11 +114,10 @@
     };
   }
 
-  async function preloadImageBatch(urls, onStep) {
+  async function preloadImageBatch(urls) {
     if (window.ImagePreloadCache) {
       await window.ImagePreloadCache.preloadAll(urls, {
         concurrency: PRELOAD_CONCURRENCY,
-        onProgress: (_done, _total) => onStep?.(),
       });
       return;
     }
@@ -116,7 +132,6 @@
         const current = queue[index];
         index += 1;
         await loadImage(current);
-        onStep?.();
       }
     }
 
@@ -124,96 +139,52 @@
     await Promise.all(Array.from({ length: workers }, worker));
   }
 
-  async function preloadSiteArtwork(onProgress) {
-    await Promise.all([waitForGallery(), waitForPrints(), waitForMaquettes()]);
+  async function preloadSiteArtworkInBackground() {
+    await Promise.all([
+      waitForGalleryCatalog(),
+      waitForPrintsCatalog(),
+      waitForMaquettesCatalog(),
+    ]);
 
     const { previews, views, other } = collectArtworkUrls();
-    const ordered = [...previews, ...views, ...other];
-    const total = ordered.length;
+    // First page of each grid is enough for instant browse; views can trail.
+    const firstWave = [...previews, ...other];
+    const secondWave = views;
 
-    if (!total) return;
-
-    let finished = 0;
-    const bump = () => {
-      finished += 1;
-      onProgress(finished, total);
-    };
-
-    await preloadImageBatch(ordered, bump);
-  }
-
-  function trackTask(promise, onStep) {
-    return promise.finally(onStep);
-  }
-
-  function warmExhibitionsVideoElement() {
-    const video = document.getElementById("exhibVideo");
-    if (!video) return Promise.resolve();
-    return new Promise((resolve) => {
-      const done = () => resolve();
-      if (video.readyState >= 2) {
-        done();
-        return;
-      }
-      video.muted = true;
-      video.preload = "auto";
-      video.addEventListener("loadeddata", done, { once: true });
-      video.addEventListener("error", done, { once: true });
-      window.setTimeout(done, 12000);
-      video.load();
-    });
-  }
-
-  function waitForInfoStarVideos() {
-    if (window.infoStarVideosReady) {
-      return window.infoStarVideosReady;
-    }
-
-    return new Promise((resolve) => {
-      const finish = () => resolve();
-      document.addEventListener("info-stars:ready", finish, { once: true });
-      window.setTimeout(finish, 5000);
-    });
+    if (firstWave.length) await preloadImageBatch(firstWave);
+    if (secondWave.length) await preloadImageBatch(secondWave);
   }
 
   async function run() {
     const start = Date.now();
-    setProgress(4);
+    setProgress(8);
 
-    const bootstrapTasks = [
-      document.fonts?.ready ?? Promise.resolve(),
-      loadImage("videos/exhibitions-bg-poster.jpg"),
-      loadVideo("videos/exhibitions-bg-web.mp4"),
-      warmExhibitionsVideoElement(),
-    ];
+    const fontsReady = document.fonts?.ready ?? Promise.resolve();
 
-    let bootstrapFinished = 0;
-    const bumpBootstrap = () => {
-      bootstrapFinished += 1;
-      setProgress(4 + (bootstrapFinished / bootstrapTasks.length) * 16);
-    };
+    // Tick progress while media warms so the bar doesn't look stuck.
+    let pulse = 8;
+    const pulseTimer = window.setInterval(() => {
+      pulse = Math.min(88, pulse + 2);
+      setProgress(pulse);
+    }, 180);
 
-    await Promise.all(bootstrapTasks.map((task) => trackTask(task, bumpBootstrap)));
+    try {
+      await Promise.all([fontsReady, waitForSiteMedia()]);
+    } finally {
+      window.clearInterval(pulseTimer);
+    }
 
-    setProgress(22);
+    setProgress(94);
 
-    await Promise.all([
-      trackTask(waitForInfoStarVideos(), () => setProgress(28)),
-      trackTask(
-        preloadSiteArtwork((done, total) => {
-          setProgress(28 + (done / total) * 68);
-        }),
-        () => {}
-      ),
-    ]);
-
-    setProgress(100);
+    // Artwork must not block the loader — warm it after first paint.
+    preloadSiteArtworkInBackground().catch(() => {});
 
     const elapsed = Date.now() - start;
     if (elapsed < MIN_MS) {
       await new Promise((resolve) => window.setTimeout(resolve, MIN_MS - elapsed));
     }
 
+    setProgress(100);
     await finishLoading();
   }
 
@@ -221,7 +192,16 @@
 
   async function finishLoading() {
     if (loadingFinished) return;
-    await waitForInfoStarVideos();
+
+    // Do not re-block on the full media pipeline — waitForSiteMedia already
+    // raced with a short cap. Just ensure star layers are visible.
+    if (!starsAreVisible()) {
+      document.getElementById("homeStars")?.classList.add("is-ready");
+      document.getElementById("homeStarsBack")?.classList.add("is-ready");
+      document.getElementById("infoStars")?.classList.add("is-ready");
+      document.getElementById("infoStarsBack")?.classList.add("is-ready");
+    }
+
     if (loadingFinished) return;
     loadingFinished = true;
 

@@ -98,6 +98,7 @@
     const delta = top - startTop;
 
     if (Math.abs(delta) < 1 || durationMs <= 0 || prefersReducedMotion()) {
+      scroller.classList.add("is-scroll-animating");
       scroller.scrollTop = top;
       onDone?.();
       return;
@@ -117,7 +118,7 @@
 
       scroller.scrollTop = top;
       scrollAnimationFrame = 0;
-      scroller.classList.remove("is-scroll-animating");
+      // Keep snap disabled — finishSectionTransition clears it after settle.
       onDone?.();
     }
 
@@ -224,6 +225,7 @@
   }
 
   let lastSettledSlug = null;
+  let settleQueued = false;
 
   function runPostSectionSettle(route) {
     if (route.slug === lastSettledSlug) return;
@@ -246,16 +248,36 @@
         window.ensurePrintsIndexScrollReady?.();
       });
     }
+
+    if (route.slug === "maquettes" && typeof window.maquettesRefreshScrollFx === "function") {
+      requestAnimationFrame(() => {
+        window.maquettesRefreshScrollFx();
+      });
+    }
+  }
+
+  function alignToActiveSection() {
+    const scroller = getScroller();
+    const section = getSectionElement(activeSlug);
+    if (!scroller || !section) return;
+
+    const targetTop = sectionScrollTop(section);
+    if (Math.abs(scroller.scrollTop - targetTop) <= 1) return;
+
+    scroller.classList.add("is-scroll-animating");
+    scroller.scrollTop = targetTop;
   }
 
   function finishSectionTransition() {
+    if (settleQueued) return;
     if (!sectionTransitionLock && !scrollingProgrammatically) return;
 
+    settleQueued = true;
     clearTimeout(scrollEndTimer);
     cancelScrollAnimation();
-    getScroller()?.classList.remove("is-scroll-animating");
-    scrollingProgrammatically = false;
-    sectionTransitionLock = false;
+
+    const scroller = getScroller();
+    scroller?.classList.add("is-scroll-animating");
 
     if (pendingResetRoute) {
       resetInternalScroll(pendingResetRoute);
@@ -264,6 +286,24 @@
 
     const route = getRoute(activeSlug);
     runPostSectionSettle(route);
+
+    // Keep snap off through layout settle, then pin once — no mid-scroll jump.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const section = getSectionElement(activeSlug);
+        if (scroller && section) {
+          const targetTop = sectionScrollTop(section);
+          if (Math.abs(scroller.scrollTop - targetTop) > 1) {
+            scroller.scrollTop = targetTop;
+          }
+        }
+
+        scrollingProgrammatically = false;
+        sectionTransitionLock = false;
+        settleQueued = false;
+        scroller?.classList.remove("is-scroll-animating");
+      });
+    });
   }
 
   function resetInternalScroll(route) {
@@ -304,12 +344,10 @@
 
     if (route.slug === "prints") {
       window.markPrintsSectionEntered?.();
-      window.printsRefreshScrollFx?.();
     }
 
     if (route.slug === "maquettes") {
       window.markMaquettesSectionEntered?.();
-      window.maquettesRefreshScrollFx?.();
     }
   }
 
@@ -342,6 +380,13 @@
 
     if (sectionTransitionLock && route.slug === activeSlug && !instant) return;
 
+    // Interrupt in-flight transition cleanly — don't snap/settle mid-way.
+    if ((sectionTransitionLock || scrollingProgrammatically || settleQueued) && !instant) {
+      clearTimeout(scrollEndTimer);
+      cancelScrollAnimation();
+      settleQueued = false;
+    }
+
     const shouldReset = Boolean(options.resetScroll);
     const targetTop = sectionScrollTop(section);
 
@@ -358,6 +403,7 @@
     });
 
     if (instant) {
+      scroller.classList.add("is-scroll-animating");
       scroller.scrollTop = targetTop;
       scrollEndTimer = window.setTimeout(finishSectionTransition, 80);
       return;
@@ -370,8 +416,35 @@
     );
   }
 
+  function getCurrentSectionSlug() {
+    const scroller = getScroller();
+    if (!scroller) return activeSlug;
+
+    const viewportMid = scroller.scrollTop + scroller.clientHeight * 0.5;
+    let bestSection = null;
+    let bestDistance = Infinity;
+
+    SECTION_ORDER.forEach((id) => {
+      const section = document.getElementById(id);
+      if (!section) return;
+
+      const top = sectionScrollTop(section);
+      const mid = top + section.offsetHeight * 0.5;
+      const distance = Math.abs(viewportMid - mid);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestSection = section;
+      }
+    });
+
+    if (!bestSection) return activeSlug;
+    return SLUG_BY_SECTION[bestSection.id] || activeSlug;
+  }
+
   function scrollBySection(delta, options = {}) {
-    const currentIdx = SECTION_ORDER.findIndex((id) => SLUG_BY_SECTION[id] === activeSlug);
+    const currentSlug = getCurrentSectionSlug();
+    const currentIdx = SECTION_ORDER.findIndex((id) => SLUG_BY_SECTION[id] === currentSlug);
     const targetIdx = currentIdx + delta;
 
     if (targetIdx < 0 || targetIdx >= SECTION_ORDER.length) return;
@@ -386,6 +459,172 @@
 
   function scrollToPreviousSection(options = {}) {
     scrollBySection(-1, options);
+  }
+
+  function getActiveSectionIndex() {
+    return SECTION_ORDER.findIndex((id) => SLUG_BY_SECTION[id] === activeSlug);
+  }
+
+  const GALLERY_SECTIONS = {
+    paintings: {
+      scrollerId: "galleryIndexScroller",
+      layoutId: "galleryLayout",
+    },
+    prints: {
+      scrollerId: "printsIndexScroller",
+      layoutId: "printsLayout",
+    },
+    maquettes: {
+      scrollerId: "maquettesIndexScroller",
+      layoutId: "maquettesLayout",
+    },
+  };
+
+  const EDGE_TOLERANCE_PX = 16;
+  const SWIPE_THRESHOLD_PX = 18;
+
+  function getGalleryInternalScroller(slug) {
+    const config = GALLERY_SECTIONS[slug];
+    return config ? document.getElementById(config.scrollerId) : null;
+  }
+
+  function isGalleryGridView(slug) {
+    const config = GALLERY_SECTIONS[slug];
+    if (!config) return false;
+    const layout = document.getElementById(config.layoutId);
+    return !layout || layout.dataset.mode !== "detail";
+  }
+
+  function isScrollContainerAtTop(el) {
+    if (!el) return true;
+    return el.scrollTop <= EDGE_TOLERANCE_PX;
+  }
+
+  function isScrollContainerAtBottom(el) {
+    if (!el) return true;
+    return el.scrollTop + el.clientHeight >= el.scrollHeight - EDGE_TOLERANCE_PX;
+  }
+
+  function canLeaveSectionByDirection(slug, direction) {
+    const galleryConfig = GALLERY_SECTIONS[slug];
+
+    if (!galleryConfig) return true;
+    if (!isGalleryGridView(slug)) return false;
+
+    const internal = getGalleryInternalScroller(slug);
+    if (!internal) return true;
+
+    if (direction < 0) return isScrollContainerAtTop(internal);
+    return isScrollContainerAtBottom(internal);
+  }
+
+  function shouldIgnoreSectionTouch(target) {
+    if (!(target instanceof Element)) return true;
+
+    return Boolean(
+      target.closest(
+        ".info-cube-wrap, .gallery-rico__nav, .gallery-rico__coa, .exhib-detail, .site-nav, .anon__list--persistent, button:not(.gallery-index__cell), a, input, textarea, select, label"
+      )
+    );
+  }
+
+  function bindSectionTouchNav() {
+    const scroller = getScroller();
+    if (!scroller) return;
+
+    const SWIPE_THRESHOLD = SWIPE_THRESHOLD_PX;
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let touchClaimed = false;
+    let touchStartSlug = "home";
+    let touchStartedAtLeavingEdge = false;
+
+    function updateTouchStartEdgeState() {
+      touchStartSlug = getCurrentSectionSlug();
+
+      if (!GALLERY_SECTIONS[touchStartSlug]) {
+        touchStartedAtLeavingEdge = true;
+        return;
+      }
+
+      if (!isGalleryGridView(touchStartSlug)) {
+        touchStartedAtLeavingEdge = false;
+        return;
+      }
+
+      const internal = getGalleryInternalScroller(touchStartSlug);
+      touchStartedAtLeavingEdge =
+        isScrollContainerAtTop(internal) || isScrollContainerAtBottom(internal);
+    }
+
+    document.addEventListener(
+      "touchstart",
+      (event) => {
+        if (event.touches.length !== 1) return;
+        touchStartY = event.touches[0].clientY;
+        touchStartX = event.touches[0].clientX;
+        touchClaimed = false;
+        updateTouchStartEdgeState();
+      },
+      { passive: true, capture: true }
+    );
+
+    document.addEventListener(
+      "touchmove",
+      (event) => {
+        if (touchClaimed || event.touches.length !== 1) return;
+        if (shouldIgnoreSectionTouch(event.target)) return;
+
+        const touch = event.touches[0];
+        const deltaY = touch.clientY - touchStartY;
+        const deltaX = touch.clientX - touchStartX;
+
+        if (Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) return;
+
+        // Gallery handoff only if the gesture began while already pinned
+        // at the grid edge — prevents mid-scroll "auto jumps".
+        if (GALLERY_SECTIONS[touchStartSlug] && !touchStartedAtLeavingEdge) {
+          return;
+        }
+
+        const direction = deltaY > 0 ? -1 : 1;
+        const currentSlug = getCurrentSectionSlug();
+        if (!canLeaveSectionByDirection(currentSlug, direction)) return;
+
+        touchClaimed = true;
+        event.preventDefault();
+        scrollBySection(direction, { resetScroll: false });
+      },
+      { passive: false, capture: true }
+    );
+
+    document.addEventListener(
+      "touchend",
+      (event) => {
+        if (touchClaimed) return;
+        if (shouldIgnoreSectionTouch(event.target)) return;
+        if (event.changedTouches.length !== 1) return;
+
+        if (GALLERY_SECTIONS[touchStartSlug] && !touchStartedAtLeavingEdge) {
+          return;
+        }
+
+        const touch = event.changedTouches[0];
+        const deltaY = touch.clientY - touchStartY;
+        const deltaX = touch.clientX - touchStartX;
+
+        if (Math.abs(deltaY) < SWIPE_THRESHOLD) return;
+        if (Math.abs(deltaX) > Math.abs(deltaY)) return;
+
+        const direction = deltaY > 0 ? -1 : 1;
+        const currentSlug = getCurrentSectionSlug();
+        if (!canLeaveSectionByDirection(currentSlug, direction)) return;
+
+        scrollBySection(direction, { resetScroll: false });
+      },
+      { passive: true, capture: true }
+    );
   }
 
   function bindSectionLinks() {
@@ -515,6 +754,7 @@
     revealAllSections();
     bindSectionLinks();
     bindHashNavigation();
+    bindSectionTouchNav();
     watchActiveSection();
 
     const initialSlug = slugFromHash();
@@ -551,6 +791,7 @@
     scrollToPreviousSection,
     scrollBySection,
     scrollToFrame: scrollToSection,
+    alignToActiveSection,
     isTransitioning,
     getSnapFrames: function () {
       return SECTION_ORDER.map((id) => document.getElementById(id)).filter(Boolean);

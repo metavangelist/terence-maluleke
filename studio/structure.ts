@@ -10,7 +10,6 @@ import {
   CalendarIcon,
   BarChartIcon,
   DocumentsIcon,
-  HomeIcon,
   EarthGlobeIcon,
 } from "@sanity/icons";
 import { AnalyticsTool } from "./plugins/analytics/AnalyticsTool";
@@ -57,7 +56,6 @@ export const structure: StructureResolver = (S) =>
       singleton(S, "siteSettings", "Site settings", CogIcon),
       singleton(S, "artistInfo", "Artist bio", UserIcon),
       S.divider(),
-      singleton(S, "homeBubble", "Home bubble", HomeIcon),
       S.listItem()
         .id("gallery-grid")
         .title("Gallery")

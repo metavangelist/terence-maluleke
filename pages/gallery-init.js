@@ -54,6 +54,40 @@ const ORIGINAL_BASE = "assets/images";
 const CACHE = "?v=20260614c";
 const ENQUIRY_EMAIL = "Contact@maluleke.art";
 
+/**
+ * CMS-only paintings (no local asset file). Used when Sanity fetch fails —
+ * e.g. CORS blocks api.sanity.io on localhost / LAN phone preview — so the
+ * grid still matches the published CMS catalog (Yimani, Within, …).
+ */
+const CMS_REMOTE_FALLBACK = [
+  {
+    file: "Yimani.jpg",
+    title: "Yimani",
+    year: "2026",
+    medium: "Acrylic on canvas",
+    dimensions: "3,4 x 2,2",
+    price: "",
+    sold: true,
+    remoteViewSrc:
+      "https://cdn.sanity.io/images/um9my25h/production/ae61546fa9b0a193cf819dff8eefd9f5e77067dc-7240x4835.jpg?w=2400&auto=format&q=82",
+    remotePreviewSrc:
+      "https://cdn.sanity.io/images/um9my25h/production/ae61546fa9b0a193cf819dff8eefd9f5e77067dc-7240x4835.jpg?w=720&auto=format&q=82",
+  },
+  {
+    file: "Within.jpg",
+    title: "Within",
+    year: "2026",
+    medium: "Acrylic on canvas",
+    dimensions: "137 x 137 cm",
+    price: "$7400",
+    sold: false,
+    remoteViewSrc:
+      "https://cdn.sanity.io/images/um9my25h/production/9daf1b22166798cfb8a765ae8b9a00547b211cdf-4195x4195.jpg?w=2400&auto=format&q=82",
+    remotePreviewSrc:
+      "https://cdn.sanity.io/images/um9my25h/production/9daf1b22166798cfb8a765ae8b9a00547b211cdf-4195x4195.jpg?w=720&auto=format&q=82",
+  },
+];
+
 function pairUtils() {
   return window.galleryPairUtils || {};
 }
@@ -137,14 +171,15 @@ let galleryEdgeHandoff = false;
 let galleryEdgeHitCount = 0;
 let galleryEdgeHitTimer = 0;
 let gallerySectionEnteredAt = 0;
-const GALLERY_EDGE_HITS_REQUIRED = 4;
-const GALLERY_EDGE_ARM_DELAY_MS = 1400;
-const GALLERY_WHEEL_THRESHOLD = 40;
+const GALLERY_EDGE_HITS_REQUIRED = 1;
+const GALLERY_EDGE_ARM_DELAY_MS = 0;
+const GALLERY_WHEEL_THRESHOLD = 24;
 const GALLERY_NEIGHBOR_EDGE_HITS_REQUIRED = 1;
-const GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS = 200;
-const GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS = 120;
+const GALLERY_NEIGHBOR_EDGE_ARM_DELAY_MS = 0;
+const GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS = 0;
 const GALLERY_EXIT_ARM_DELAY_MS = GALLERY_NEIGHBOR_EXIT_ARM_DELAY_MS;
-const GALLERY_GRID_EXIT_ARM_DELAY_MS = 480;
+const GALLERY_GRID_EXIT_ARM_DELAY_MS = 0;
+const GALLERY_SWIPE_THRESHOLD = 24;
 let galleryExitToPrintsArmed = false;
 let galleryExitArmTimer = 0;
 let galleryGridBottomWheelAccum = 0;
@@ -310,7 +345,7 @@ function galleryEdgesArmedFor(targetSlug) {
 function markGallerySectionEntered() {
   gallerySectionEnteredAt = Date.now();
   galleryEdgeHitCount = 0;
-  galleryExitToPrintsArmed = false;
+  galleryExitToPrintsArmed = true;
   galleryGridBottomWheelAccum = 0;
   galleryIndexScrollReady = false;
   window.clearTimeout(galleryExitArmTimer);
@@ -319,9 +354,6 @@ function markGallerySectionEntered() {
   syncGalleryIndexPageHeights();
   ensureGalleryIndexScrollReadySoon();
   galleryLastGridPageSeen = -1;
-  galleryExitArmTimer = window.setTimeout(() => {
-    galleryExitToPrintsArmed = true;
-  }, GALLERY_GRID_EXIT_ARM_DELAY_MS);
 }
 
 function galleryEdgesArmed() {
@@ -329,10 +361,7 @@ function galleryEdgesArmed() {
 }
 
 function galleryPrintsHandoffReady() {
-  return (
-    galleryExitToPrintsArmed &&
-    Date.now() - gallerySectionEnteredAt >= GALLERY_GRID_EXIT_ARM_DELAY_MS
-  );
+  return galleryExitToPrintsArmed;
 }
 
 function getGalleryGridPageIndex() {
@@ -355,7 +384,7 @@ function disarmGalleryExitToPrints() {
   window.clearTimeout(galleryExitArmTimer);
   galleryExitArmTimer = window.setTimeout(() => {
     galleryExitToPrintsArmed = true;
-  }, GALLERY_GRID_EXIT_ARM_DELAY_MS);
+  }, 0);
 }
 
 function onGalleryGridPageChange() {
@@ -687,7 +716,20 @@ function scrollPillToIndex(index, smooth = false) {
   if (pillIndexAtCenter(nav) === index) return;
 
   pillScrollSyncing = true;
-  pill.scrollIntoView({ block: "center", behavior: smooth ? "smooth" : "auto" });
+
+  // Never use scrollIntoView — it also scrolls #siteScroller and desyncs sections.
+  const navRect = nav.getBoundingClientRect();
+  const pillRect = pill.getBoundingClientRect();
+  const delta =
+    pillRect.top + pillRect.height / 2 - (navRect.top + navRect.height / 2);
+  const nextTop = nav.scrollTop + delta;
+
+  if (smooth && typeof nav.scrollTo === "function") {
+    nav.scrollTo({ top: nextTop, behavior: "smooth" });
+  } else {
+    nav.scrollTop = nextTop;
+  }
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => { pillScrollSyncing = false; });
   });
@@ -992,8 +1034,12 @@ function scrollGridToIndex(index) {
   if (!scroller) return;
 
   const page = catalogPageForIndex(resolveGalleryNavIndex(index));
-  const pageEl = scroller.querySelector(`.gallery-index__page[data-page="${page}"]`);
-  if (pageEl) pageEl.scrollIntoView({ block: "start" });
+  const pageHeight = getGalleryIndexPageHeight(scroller);
+  if (!pageHeight) return;
+
+  // Set scrollTop on the internal scroller only — scrollIntoView would
+  // also move #siteScroller and leave a grey gap under the nav.
+  scroller.scrollTop = Math.max(0, page * pageHeight);
 }
 
 function showGalleryGrid(options = {}) {
@@ -1167,7 +1213,7 @@ function initGalleryPageNav() {
     galleryEdgeHandoff = true;
     window.printsRefreshScrollFx?.();
     window.siteScroll?.scrollToSection?.("prints", { resetScroll: false });
-    window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
+    window.setTimeout(() => { galleryEdgeHandoff = false; }, 520);
   }
 
   function clampIndex(index) {
@@ -1496,21 +1542,12 @@ function initGalleryIndexNav() {
     const visuallyAtTop = isGalleryGridVisuallyAtTop(scroller);
     const atBottom = visuallyAtBottom || isGalleryGridAtBottom(scroller);
     const atTop = visuallyAtTop || isGalleryGridAtTop(scroller);
-    
-    if (targetSlug === "prints") {
-      if (!atBottom) return;
-      if (!galleryPrintsHandoffReady()) return;
-      if (isGalleryIndexScrollReady()) {
-        syncGalleryIndexPageHeights();
-        clampGalleryIndexScroll(scroller);
-      }
-    }
+
+    if (targetSlug === "prints" && !atBottom) return;
     if (targetSlug === "info" && !atTop) return;
-    
+
     prepSectionHandoff(targetSlug);
-    galleryEdgeHandoff = true;
     window.siteScroll?.scrollToSection?.(targetSlug, { resetScroll: false });
-    window.setTimeout(() => { galleryEdgeHandoff = false; }, 1040);
   }
 
   scroller.addEventListener(
@@ -1518,7 +1555,6 @@ function initGalleryIndexNav() {
     (event) => {
       if (document.body.dataset.currentSection !== "paintings") return;
       if (galleryViewMode !== "grid") return;
-      if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
 
       const scrollReady = isGalleryIndexScrollReady();
       
@@ -1542,21 +1578,6 @@ function initGalleryIndexNav() {
       if ((atTop || atTopVisual) && event.deltaY < 0) {
         event.preventDefault();
         event.stopPropagation();
-
-        if (!galleryEdgesArmed()) return;
-
-        const now = Date.now();
-        if (now - gridUpLastTime < GRID_EDGE_DEBOUNCE_MS) return;
-        gridUpLastTime = now;
-
-        gridDownHitCount = 0;
-        gridUpHitCount += 1;
-        window.clearTimeout(gridUpHitTimer);
-        gridUpHitTimer = window.setTimeout(() => { gridUpHitCount = 0; }, 1200);
-
-        if (gridUpHitCount < edgeHitsRequired("info")) return;
-
-        gridUpHitCount = 0;
         doGridHandoff("info");
         return;
       }
@@ -1564,89 +1585,11 @@ function initGalleryIndexNav() {
       if ((atBottom || atBottomVisual) && event.deltaY > 0) {
         event.preventDefault();
         event.stopPropagation();
-
-        if (!galleryEdgesArmedFor("prints")) return;
-
-        galleryGridBottomWheelAccum += event.deltaY;
-        window.clearTimeout(galleryGridBottomWheelResetTimer);
-        galleryGridBottomWheelResetTimer = window.setTimeout(() => {
-          galleryGridBottomWheelAccum = 0;
-        }, 150);
-
-        if (galleryGridBottomWheelAccum < GALLERY_WHEEL_THRESHOLD) return;
-
-        galleryGridBottomWheelAccum = 0;
         doGridHandoff("prints");
         return;
       }
-
-      event.stopPropagation();
     },
     { passive: false }
-  );
-
-  let indexTouchStartY = 0;
-
-  scroller.addEventListener(
-    "touchstart",
-    (event) => {
-      if (galleryViewMode !== "grid") return;
-      indexTouchStartY = event.touches[0]?.clientY ?? 0;
-    },
-    { passive: true }
-  );
-
-  let touchDownHitCount = 0;
-  let touchDownHitTimer = 0;
-  let touchUpHitCount = 0;
-  let touchUpHitTimer = 0;
-  let touchBottomHitCount = 0;
-  let touchBottomHitTimer = 0;
-
-  scroller.addEventListener(
-    "touchend",
-    (event) => {
-      if (document.body.dataset.currentSection !== "paintings") return;
-      if (galleryViewMode !== "grid") return;
-      if (galleryEdgeHandoff || window.siteScroll?.isTransitioning?.()) return;
-      
-      const scrollReady = isGalleryIndexScrollReady();
-      if (!scrollReady) {
-        ensureGalleryIndexScrollReadySoon();
-      }
-
-      const touch = event.changedTouches[0];
-      if (!touch) return;
-
-      const deltaY = touch.clientY - indexTouchStartY;
-      const atTopVisual = isGalleryGridVisuallyAtTop(scroller);
-      const atBottomVisual = isGalleryGridVisuallyAtBottom(scroller);
-      const atTop = scrollReady ? isGalleryGridAtTop(scroller) : atTopVisual;
-      const atBottom = scrollReady ? isGalleryGridAtBottom(scroller) : atBottomVisual;
-
-      if ((atTop || atTopVisual) && deltaY > 36) {
-        if (!galleryEdgesArmed()) return;
-
-        touchDownHitCount = 0;
-        touchUpHitCount += 1;
-        window.clearTimeout(touchUpHitTimer);
-        touchUpHitTimer = window.setTimeout(() => { touchUpHitCount = 0; }, 1200);
-
-        if (touchUpHitCount < edgeHitsRequired("info")) return;
-
-        touchUpHitCount = 0;
-        doGridHandoff("info");
-        return;
-      }
-
-      if ((atBottom || atBottomVisual) && deltaY < -36) {
-        if (!galleryEdgesArmedFor("prints")) return;
-
-        touchBottomHitCount = 0;
-        doGridHandoff("prints");
-      }
-    },
-    { passive: true }
   );
 }
 
@@ -2649,8 +2592,9 @@ async function loadCatalog() {
   const sg = await loadGallerySgData();
 
   const byTitle = Object.fromEntries(sg.works.map((w) => [w.title, w]));
+  const remoteOffset = CMS_REMOTE_FALLBACK.length;
 
-  catalog = FILES.map((file, filesIndex) => {
+  const fromFiles = FILES.map((file, filesIndex) => {
     const sgTitle = sg.fileToTitle[file];
 
     if (sgTitle && byTitle[sgTitle]) {
@@ -2663,7 +2607,7 @@ async function loadCatalog() {
         dimensions: w.dimensions,
         price: w.price,
         sold: Boolean(w.sold),
-        filesIndex,
+        filesIndex: remoteOffset + filesIndex,
       });
     }
 
@@ -2672,9 +2616,16 @@ async function loadCatalog() {
       file,
       title: stem,
       year: PLACEHOLDER_YEARS[filesIndex] || "",
-      filesIndex,
+      filesIndex: remoteOffset + filesIndex,
     });
   });
+
+  catalog = [
+    ...CMS_REMOTE_FALLBACK.map((item, filesIndex) =>
+      normalizeCatalogItem({ ...item, filesIndex })
+    ),
+    ...fromFiles,
+  ];
 
   catalog = sortCatalogItems(catalog);
   catalog = catalog.filter((item) => !isPrintMedium(item));
