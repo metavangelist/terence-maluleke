@@ -1634,12 +1634,6 @@
       if (!item.sold) enquireEl.href = enquiryMailto(item);
     }
 
-    const contactEl = document.querySelector(".site-nav__contact");
-    if (contactEl && document.body.dataset.currentSection === "maquettes") {
-      if (item.sold) contactEl.href = `mailto:${ENQUIRY_EMAIL}`;
-      else contactEl.href = enquiryMailto(item);
-    }
-
     if (viewMode === "detail" && typeof window.trackArtworkView === "function") {
       window.trackArtworkView("assamblage", item.title);
     }
@@ -1676,6 +1670,8 @@
     setMaquettesImmersive(false);
     viewMode = "grid";
     resetViewportSize();
+    const contactEl = document.querySelector(".site-nav__contact");
+    if (contactEl) contactEl.href = `mailto:${ENQUIRY_EMAIL}`;
     const layout = document.getElementById("maquettesLayout");
     if (layout) layout.dataset.mode = "grid";
 

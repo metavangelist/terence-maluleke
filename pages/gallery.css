@@ -1311,6 +1311,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.gallery-rico__enquire[hidden] {
+  display: none !important;
+}
+
 .gallery-rico__enquire:hover {
   background: var(--gr-text);
   border-color: var(--gr-text);

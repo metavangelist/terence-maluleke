@@ -138,13 +138,13 @@ function syncEnquiryLinks(item, sectionLabel = "Paintings") {
 
   const href = enquiryMailto(item, sectionLabel);
   const enquireEl = document.getElementById("galleryRicoEnquire");
-  const contactEl = document.querySelector(".site-nav__contact");
 
   if (enquireEl) {
     enquireEl.hidden = Boolean(item.sold);
     if (!item.sold) enquireEl.href = href;
   }
-  if (contactEl && !item.sold) contactEl.href = href;
+
+  // Nav Contact stays a plain mailto — artwork enquiries use the Enquire button only.
 }
 
 function resetEnquiryContact() {
@@ -1051,6 +1051,7 @@ function showGalleryGrid(options = {}) {
   galleryPageAnimating = false;
   galleryLockedSquareSize = null;
   resetGalleryViewportSize();
+  resetEnquiryContact();
 
   const layout = document.getElementById("galleryLayout");
   if (layout) layout.dataset.mode = "grid";
@@ -2721,6 +2722,7 @@ async function initGallery() {
   window.galleryIsImmersive = () => galleryImmersive;
   window.gallerySetImmersive = setGalleryImmersive;
   window.resetEnquiryContact = resetEnquiryContact;
+  resetEnquiryContact();
 
   document.addEventListener("gallery:ready", fixGalleryHeights);
 
